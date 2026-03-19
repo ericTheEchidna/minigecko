@@ -65,7 +65,7 @@ class HexPanel(Vertical):
         except ValueError:
             return
         line = offset // _HEX_WIDTH
-        self.query_one("#hex-log", RichLog).scroll_to(y=line, animate=True)
+        self.query_one("#hex-log", RichLog).scroll_to(y=line, animate=False)
         event.input.blur()
 
     def clear(self) -> None:
@@ -74,7 +74,7 @@ class HexPanel(Vertical):
 
     def append_line(self, line) -> None:
         log = self.query_one("#hex-log", RichLog)
-        if not log.line_count:
+        if not log.lines:
             self._set_header_visible(True)
         log.write(line)
 
