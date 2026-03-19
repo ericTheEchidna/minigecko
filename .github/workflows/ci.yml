@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run tests
+        run: pytest -v
+
+      - name: Validate truth tables
+        run: |
+          python - <<'EOF'
+          from pathlib import Path
+          from minigecko.plugins.logicprobe import TruthTable
+          errors = []
+          for p in sorted(Path("data/truth_tables").glob("*.yaml")):
+              try:
+                  tt = TruthTable.load(p)
+                  assert tt.part, f"{p}: missing part name"
+                  assert tt.input_names, f"{p}: no input names"
+                  assert tt.output_names, f"{p}: no output names"
+                  assert tt.rows, f"{p}: no rows"
+                  print(f"  OK  {tt.part:<20} {len(tt.rows):3} rows")
+              except Exception as e:
+                  errors.append(f"  FAIL {p.name}: {e}")
+          if errors:
+              for e in errors:
+                  print(e)
+              raise SystemExit(1)
+          print(f"\nAll {sum(1 for _ in Path('data/truth_tables').glob('*.yaml'))} truth tables valid.")
+          EOF
+
+      - name: Check CLI entry points
+        run: |
+          python -m minigecko version
+          python -m minigecko logicprobe list-parts
+          python -m minigecko logicprobe show 74HCT138
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install linting tools
+        run: pip install ruff
+
+      - name: Run ruff
+        run: ruff check minigecko/ tests/ --select E,W,F --ignore E501

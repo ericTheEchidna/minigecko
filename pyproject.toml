@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "minigecko"
+version = "0.2.0"
+description = "MiniGecko — open source TUI hardware programmer suite powered by minipro"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "GPL-3.0-or-later" }
+authors = [{ name = "ericTheEchidna" }]
+keywords = ["tui", "programmer", "eeprom", "rom", "gal", "pld", "minipro", "z80", "retro"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Topic :: System :: Hardware",
+]
+
+dependencies = [
+    "textual>=0.70.0",
+    "click>=8.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "textual-dev>=0.70.0",
+]
+
+[project.scripts]
+minigecko = "minigecko.__main__:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["minigecko*"]
+
+[tool.setuptools.package-data]
+minigecko = ["py.typed"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
