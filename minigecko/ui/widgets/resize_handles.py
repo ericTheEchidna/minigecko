@@ -88,6 +88,4 @@ class VResizeHandle(Static):
     def on_mouse_up(self, _: MouseUp) -> None:
         self._dragging = False
         self.release_mouse()
-        app = self.app
-        assert isinstance(app, MinigeckoApp)
-        app.save_info_panel_height()
+        self.app.save_info_panel_height()  # type: ignore[attr-defined]
