@@ -100,6 +100,7 @@ anything above `core/minipro.py`.
 - [ ] Hardware hotplug via `udev` instead of polling timer
 - [ ] `libminipro` Python bindings (direct USB, no subprocess)
 - [ ] Windows support (would require libminipro bindings or a port of minipro)
+- [ ] in development: richer chip descriptions
 
 ---
 
