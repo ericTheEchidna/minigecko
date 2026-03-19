@@ -115,6 +115,7 @@ class MinigeckoApp(App):
         set_binary_path(self._state.get("minipro_path", ""))
         self._poll_programmer()
         self._preload_device_db()
+        self.query_one("#hex-log").focus()
 
     @work(thread=True)
     def _poll_programmer(self) -> None:
