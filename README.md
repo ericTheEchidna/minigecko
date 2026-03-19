@@ -2,7 +2,7 @@
 
 **Open source TUI programmer suite powered by [minipro](https://gitlab.com/DavidGriffith/minipro).**
 
-MiniGecko wraps the `minipro` CLI in a polished terminal UI. It works with any programmer that minipro
+MiniGecko wraps the `minipro` CLI in a polished terminal UI. It should work with any programmer that minipro
 supports — TL866II+, T48, T56, T76, and others.
 
 > **Early days.** This is a personal tool that grew into something shareable.
@@ -64,13 +64,6 @@ minigecko          # launches the interactive TUI
 minigecko tui      # explicit
 ```
 
-### CLI — programmer detection
-
-```bash
-minigecko detect
-# [OK] TL866II+  firmware 4.2.132
-```
-
 ### Emulator mode (no hardware needed)
 
 ```bash
@@ -121,7 +114,7 @@ practical necessity.
 this project — his patient, thorough approach to explaining digital logic
 and homebrew computing is what got the author deep enough into this hobby
 to need a tool like MiniGecko in the first place. If you haven't watched his
-series on building an 8-bit computer from scratch, you should.
+series on building an 8-bit computer from scratch or the 6502 project, you REALLY should.
 
 ---
 
