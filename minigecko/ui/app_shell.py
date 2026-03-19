@@ -14,7 +14,7 @@ from textual.containers import Horizontal, Vertical
 from textual.widgets import Footer, Header, Static
 
 from minigecko import __version__
-from minigecko.ui.hexdump import _MAX_BYTES, _iter_hexdump
+from minigecko.ui.hexdump import _MAX_BYTES
 from minigecko.ui.modals import ChipSelectScreen, FilePickerScreen, HelpScreen, ICOpsScreen, infer_chip_type
 from minigecko.ui.panels import ActionLogPanel, HexPanel, ICInfoPanel
 from minigecko.ui.state import _load_state, _save_state
@@ -177,20 +177,15 @@ class MinigeckoApp(App):
         try:
             data = path.read_bytes()
         except OSError as exc:
-            self.call_from_thread(panel.append_line, f"Error: {exc}")
+            self.log_action(f"[red]FILE  read error:[/]  {exc}")
             return
 
         truncated = len(data) > _MAX_BYTES
         if truncated:
             data = data[:_MAX_BYTES]
+            self._log(f"[yellow]FILE  truncated — showing first {_MAX_BYTES // 2**20} MB[/]")
 
-        for line in _iter_hexdump(data):
-            self.call_from_thread(panel.append_line, line)
-
-        if truncated:
-            self.call_from_thread(panel.append_line, f"\n[truncated — showing first {_MAX_BYTES // 2**20} MB]")
-
-        self.call_from_thread(panel.scroll_top)
+        self.call_from_thread(panel.load, data)
 
     def save_panel_width(self) -> None:
         panel = self.query_one(HexPanel)

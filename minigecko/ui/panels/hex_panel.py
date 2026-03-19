@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
-from textual.widgets import Input, RichLog, Static
+from textual.widgets import Input, Static
 
 from minigecko.ui.hexdump import _HEX_WIDTH, _col_header_markup, _separator_markup
+from minigecko.ui.widgets.hex_dump_view import HexDumpView
 
 
 class HexPanel(Vertical):
@@ -38,10 +39,6 @@ class HexPanel(Vertical):
     HexPanel > #hex-separator {
         height: 1;
     }
-    HexPanel > #hex-log {
-        height: 1fr;
-        padding: 0;
-    }
     """
 
     def compose(self) -> ComposeResult:
@@ -49,7 +46,7 @@ class HexPanel(Vertical):
             yield Input(placeholder="offset", id="hex-offset-input")
             yield Static(_col_header_markup(), id="hex-col-labels")
         yield Static(_separator_markup(), id="hex-separator")
-        yield RichLog(id="hex-log", highlight=False, markup=False, auto_scroll=False)
+        yield HexDumpView(id="hex-log")
 
     def on_mount(self) -> None:
         self._set_header_visible(False)
@@ -64,19 +61,16 @@ class HexPanel(Vertical):
             offset = int(raw, 16)
         except ValueError:
             return
-        line = offset // _HEX_WIDTH
-        self.query_one("#hex-log", RichLog).scroll_to(y=line, animate=False)
+        self.query_one(HexDumpView).jump_to_offset(offset)
         event.input.blur()
+
+    def load(self, data: bytes) -> None:
+        self._set_header_visible(True)
+        self.query_one(HexDumpView).load(data)
 
     def clear(self) -> None:
         self._set_header_visible(False)
-        self.query_one("#hex-log", RichLog).clear()
-
-    def append_line(self, line) -> None:
-        log = self.query_one("#hex-log", RichLog)
-        if not log.lines:
-            self._set_header_visible(True)
-        log.write(line)
+        self.query_one(HexDumpView).clear()
 
     def scroll_top(self) -> None:
-        self.query_one("#hex-log", RichLog).scroll_home(animate=False)
+        self.query_one(HexDumpView).scroll_home(animate=False)

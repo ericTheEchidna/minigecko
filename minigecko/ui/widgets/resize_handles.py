@@ -7,10 +7,9 @@ from typing import TYPE_CHECKING
 from textual.events import MouseDown, MouseMove, MouseUp
 from textual.widgets import Static
 
-from minigecko.ui.panels import HexPanel, ICInfoPanel
-
 if TYPE_CHECKING:
     from minigecko.ui.app_shell import MinigeckoApp
+    from minigecko.ui.panels import HexPanel, ICInfoPanel
 
 
 class ResizeHandle(Static):
