@@ -1,6 +1,6 @@
 # MiniGecko User Manual
 
-Draft status: skeleton
+Draft status: complete
 
 This document is the long-form end-user manual for MiniGecko.
 
@@ -89,7 +89,7 @@ minipro --version
 ```
 
 You should see version output and, when hardware is connected, a line like
-`Found TL866II+ firmware 04.2.132`.
+`Found TL866II+ 04.2.132`.
 
 ### 3.2 Install MiniGecko
 
@@ -410,6 +410,7 @@ Chip selection dialog:
 
 | Key | Action |
 | --- | --- |
+| `Up` / `Down` | Move between results (works from the search input) |
 | `Enter` | Select the highlighted device |
 | `Escape` | Cancel and close the dialog |
 
@@ -424,6 +425,8 @@ IC operations dialog:
 
 | Key | Action |
 | --- | --- |
+| `Up` / `Down` | Move between operations |
+| `Enter` | Activate highlighted operation |
 | `Escape` | Close the operations dialog |
 
 Write confirmation dialog:
@@ -695,7 +698,7 @@ UV EPROM handling:
 
 - Some older EPROMs, such as the 27C-series, cannot be erased electrically.
 - For these devices the `Erase` button in the IC operations menu is disabled
-  and replaced with a notice.
+  (greyed out), and a UV-erase notice is shown below it.
 - These parts require a UV eraser lamp (approximately 253 nm for roughly
   30 minutes). MiniGecko cannot perform or trigger this process.
 
@@ -850,61 +853,435 @@ For critical or hard-to-replace devices:
 
 ### 11.1 State File
 
-TODO: Document state file location and stored fields.
+MiniGecko stores persistent UI state in a JSON file at:
+
+```
+~/.config/minigecko/state.json
+```
+
+The file is created automatically on first run. MiniGecko reads it at startup
+and writes it when you resize panels, open files, or quit the application.
+You do not normally need to edit this file by hand, but you can do so when
+MiniGecko is not running.
+
+Fields stored in `state.json`:
+
+| Field | Default | Description |
+| --- | --- | --- |
+| `hex_panel_width` | `66` | Width of the hex panel in terminal columns. |
+| `info_panel_height` | `18` | Height of the IC information panel in rows. |
+| `last_directory` | Home directory | Last directory opened in the file picker. |
+| `minipro_path` | `""` (empty) | Absolute path to the `minipro` binary. Empty means find it on `PATH`. |
+
+If the state file is missing, corrupt, or unreadable, MiniGecko falls back
+to built-in defaults and logs a warning. Panel sizes revert to defaults
+and the file picker starts in your home directory.
+
+To reset the state file:
+
+```bash
+rm ~/.config/minigecko/state.json
+```
 
 ### 11.2 Environment Variables
 
-TODO: Document MINIGECKO_EMULATE and MINIPRO_HOME.
+`MINIGECKO_EMULATE`
+
+- Set to `1` to activate emulator mode.
+- Replaces the real `minipro` transport with a simulated backend.
+- No hardware or `minipro` binary is required.
+- Useful for UI testing and workflow rehearsal.
+- Must be set before launch; changing it while MiniGecko is running has
+  no effect.
+
+```bash
+MINIGECKO_EMULATE=1 minigecko
+```
+
+`MINIPRO_HOME`
+
+- Set to the directory containing `minipro`'s data files, including
+  `logicic.xml` (the logic IC test vector database).
+- When set, MiniGecko checks `$MINIPRO_HOME/logicic.xml` first before
+  falling back to the standard system locations
+  (`/usr/local/share/minipro/` and `/usr/share/minipro/`).
+- Use this variable if your `minipro` was installed to a non-standard
+  location or if you are testing with a custom device database.
+
+```bash
+MINIPRO_HOME=/opt/minipro/share minigecko
+```
 
 ### 11.3 Custom minipro Path
 
-TODO: Explain how minipro path override is set and used.
+If `minipro` is installed to a non-standard location and is not on your
+`PATH`, you can tell MiniGecko where to find it by setting the
+`minipro_path` field in the state file.
+
+To configure a custom path, edit `~/.config/minigecko/state.json` while
+MiniGecko is not running:
+
+```json
+{
+  "minipro_path": "/opt/minipro/bin/minipro"
+}
+```
+
+Behavior:
+
+- When `minipro_path` is set to a non-empty string, MiniGecko uses that
+  absolute path directly instead of searching `PATH`.
+- If the path does not point to an existing file, MiniGecko reports
+  `minipro not found` — it does not fall back to `PATH` lookup.
+- Set `minipro_path` back to an empty string (`""`) to revert to `PATH`
+  lookup.
 
 ## 12. Troubleshooting
 
 ### 12.1 Programmer Not Detected
 
-TODO: Add USB permissions, cable, power, and command checks.
+Symptom: The application subtitle shows `Programmer: not detected` or
+operations immediately fail with a message about no programmer found.
+
+Check the USB connection:
+
+- Confirm the programmer is plugged in and the USB cable is properly seated.
+- Try a different USB port or cable.
+- Unplug and replug the programmer.
+
+Verify `minipro` can see the device:
+
+```bash
+minipro --version
+```
+
+When a programmer is connected, this should print a `Found <model> <fw>`
+line. If it does not, the issue is below MiniGecko at the `minipro` or
+USB layer.
+
+Check USB permissions:
+
+- By default, USB devices may require root access on Linux.
+- If `sudo minipro --version` works but `minipro --version` does not,
+  your user account lacks permission to access the programmer.
+- Add a `udev` rule for your programmer's USB vendor ID:
+
+```bash
+# Example for TL866II+ (vendor ID 04d8)
+echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="04d8", MODE="0666", GROUP="plugdev"' \
+  | sudo tee /etc/udev/rules.d/99-minipro.rules
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+
+- Then log out and back in, or run `newgrp plugdev`.
+
+Verify `minipro` is on your `PATH`:
+
+```bash
+which minipro
+```
+
+If this returns nothing, `minipro` is either not installed or not accessible.
+See section 3.1 for install steps, or configure `minipro_path` in the state
+file as described in section 11.3.
+
+Use emulator mode to isolate TUI issues:
+
+```bash
+MINIGECKO_EMULATE=1 minigecko
+```
+
+If MiniGecko behaves correctly in emulator mode, the problem is with
+hardware or `minipro` rather than the application itself.
 
 ### 12.2 Operation Fails Midway
 
-TODO: Add guidance for unstable contacts, chip mismatch, and retries.
+Symptom: Read, write, erase, or verify starts but stops before completion,
+or reports an unexpected error from `minipro`.
+
+Check device seating:
+
+- Open the ZIF lever, remove the device, and re-insert it carefully.
+- Confirm correct orientation (pin 1 toward the lever end, usually).
+- Close the lever fully.
+- Run Pin Check before retrying.
+
+Check for a chip ID mismatch warning:
+
+- If the action log shows a chip ID warning, confirm that the device you
+  selected matches the physical part.
+- A mismatch does not always prevent the operation, but it is a strong signal
+  that the wrong part is selected.
+
+For write failures after erase:
+
+- Run Blank Check to confirm the device was fully erased.
+- If Blank Check fails, the erase may have been incomplete. Try erasing again.
+
+For operations that time out:
+
+- MiniGecko applies a 120-second timeout to each `minipro` call.
+- If an operation consistently times out, the device may be damaged, the
+  programmer may be hanging, or the USB connection may be unstable.
+- Unplug and replug the programmer and retry.
 
 ### 12.3 Device Not in Database
 
-TODO: Add minipro DB update and fallback guidance.
+Symptom: Searching for your chip in the chip selector returns no results.
+
+The device list comes directly from `minipro -l`. If your chip is missing:
+
+Check the installed `minipro` version:
+
+```bash
+minipro --version
+```
+
+Older `minipro` versions have smaller device databases. Update `minipro` to
+get support for more devices:
+
+```bash
+# Debian / Ubuntu
+sudo apt update && sudo apt install minipro
+
+# From source
+git clone https://gitlab.com/DavidGriffith/minipro
+cd minipro && make && sudo make install
+```
+
+Search using a partial name:
+
+- Try shorter or alternative spellings. For example, `28C256` instead of
+  `AT28C256`.
+- Try filtering by category first to narrow the list.
+
+If the chip is genuinely unsupported by your `minipro` build, there is no
+workaround from within MiniGecko. Check the `minipro` issue tracker or
+device database to see if support is planned or available in a newer build.
 
 ### 12.4 UI Issues
 
-TODO: Add terminal compatibility and resize behavior notes.
+Symptom: The interface renders incorrectly, appears blank, or keys do not
+respond as expected.
+
+Terminal compatibility:
+
+- MiniGecko requires a modern terminal emulator with standard keyboard and
+  ANSI color support.
+- Recommended terminals: GNOME Terminal, Alacritty, kitty, WezTerm, tmux
+  (with a compatible inner terminal), or any terminal that supports Textual
+  applications.
+- If the UI appears garbled, try a different terminal emulator.
+- Avoid running inside very old or stripped-down terminal emulators that
+  lack color or proper input handling.
+
+Resize behavior:
+
+- MiniGecko reflows its layout when the terminal window is resized.
+- If panels appear misaligned after a resize, try pressing `Ctrl+L` or
+  resizing the terminal window slightly to force a redraw.
+- Panel split positions are saved to the state file. If the saved sizes are
+  no longer valid after a terminal resize, delete `~/.config/minigecko/state.json`
+  to reset them.
+
+Keyboard shortcuts not working:
+
+- Some terminal emulators or multiplexers intercept key combinations before
+  they reach the application.
+- If `Ctrl+Q` does not quit, check whether your terminal or tmux is
+  capturing it. Try using the command palette (`Ctrl+P`) to access quit.
+
+Application fails to start:
+
+- Confirm Python 3.11 or newer:
+
+  ```bash
+  python3 --version
+  ```
+
+- Confirm the `minigecko` entry point is installed:
+
+  ```bash
+  which minigecko
+  ```
+
+- If `minigecko` is not found after `pip install -e .`, confirm your
+  Python environment's `bin` directory is on your `PATH`.
 
 ## 13. Glossary
 
-TODO: Define terms (ZIF, ISP, blank check, verify, VPP, VCC).
+**Blank check**
+A test that reads every byte of a device and confirms each one is `0xFF`,
+the erased state for most Flash and EEPROM devices. A device that passes
+blank check is ready to program.
+
+**DIP (Dual Inline Package)**
+A common IC package format with two parallel rows of through-hole pins.
+Most EPROMs and EEPROMs targeted by `minipro` use DIP packages.
+
+**EEPROM (Electrically Erasable Programmable Read-Only Memory)**
+A non-volatile memory type that can be erased and rewritten electrically,
+typically byte by byte or page by page without a separate erase step.
+
+**EPROM (Erasable Programmable Read-Only Memory)**
+An older non-volatile memory type programmed electrically but erased by
+exposure to ultraviolet light (UV EPROM). Erase requires a UV lamp; the
+programmer hardware cannot erase these devices.
+
+**Flash**
+A type of EEPROM that is erased and written in blocks or sectors rather
+than byte by byte. Common in embedded systems and modern storage devices.
+
+**ISP (In-System Programming)**
+The ability to program a device while it remains installed in a circuit,
+using a programming header rather than removing and socketing the chip.
+The IC information panel indicates ISP support for applicable devices.
+
+**OTP (One-Time Programmable)**
+A device that can be programmed once and cannot be erased. Treat OTP
+writes as permanent and verify carefully before committing data.
+
+**PLD (Programmable Logic Device)**
+A category of configurable logic ICs, including PALs, GALs, and CPLDs.
+`minipro` supports programming and reading a range of PLD families.
+
+**SRAM (Static Random-Access Memory)**
+A volatile memory device that retains data only while powered. `minipro`
+can run functional test vectors against SRAM to verify correct operation.
+
+**VCC**
+The positive supply voltage pin of a device. The IC information panel may
+report the default VCC voltage for the selected chip.
+
+**VPP (Programming Voltage)**
+An elevated supply voltage applied to certain devices during programming
+or erase operations. The programmer hardware manages VPP automatically;
+MiniGecko and `minipro` handle the sequencing transparently.
+
+**Verify**
+A post-write step that reads the device back and compares it byte-by-byte
+against the source file. MiniGecko enables `Verify after write` by
+default. A failed verify indicates that the write did not complete
+correctly.
+
+**ZIF (Zero Insertion Force) socket**
+The lever-operated socket on the programmer that holds the target IC
+during operations. Opening the lever releases the chip with minimal
+force. A fully closed lever is required for reliable contact.
 
 ## 14. Quick Reference
 
-TODO: One-page command and shortcut cheat sheet.
+### Launch
+
+| Command | Effect |
+| --- | --- |
+| `minigecko` | Start the TUI |
+| `minigecko tui` | Start the TUI (explicit) |
+| `MINIGECKO_EMULATE=1 minigecko` | Start in emulator mode (no hardware required) |
+| `minigecko version` | Print installed version |
+| `minigecko detect` | Report programmer detection status |
+
+### Global Keys
+
+| Key | Action |
+| --- | --- |
+| `f` | Open file picker |
+| `s` | Open chip selector |
+| `d` | Open IC operations (requires chip selected) |
+| `Ctrl+D` | Toggle dark / light theme |
+| `Ctrl+P` | Open command palette |
+| `Ctrl+Q` | Quit |
+
+### Chip Selector Dialog
+
+| Key | Action |
+| --- | --- |
+| Type to search | Filter by name (case-insensitive) |
+| `Up` / `Down` | Move between results (works from the search input) |
+| `Enter` | Select highlighted device |
+| `Escape` | Cancel |
+
+### IC Operations Dialog
+
+| Key | Action |
+| --- | --- |
+| `Up` / `Down` | Move between operations |
+| `Enter` | Activate highlighted operation |
+| `Escape` | Close dialog |
+
+### Write Confirmation Dialog
+
+| Key | Action |
+| --- | --- |
+| `Space` | Toggle `Verify after write` |
+| `Enter` | Confirm write |
+| `Escape` | Cancel |
+
+### Erase Confirmation Dialog
+
+| Key | Action |
+| --- | --- |
+| `Space` | Toggle selected checkbox |
+| `Enter` | Confirm erase |
+| `Escape` | Cancel |
+
+### Hex View Modal
+
+| Key | Action |
+| --- | --- |
+| `Up` / `Down` | Scroll one line |
+| `PgUp` / `PgDn` | Scroll one page |
+| `Home` | Jump to top |
+| `End` | Jump to bottom |
+| `Escape` | Close |
+
+### Device Operation Summary
+
+| Operation | Destructive | Requires data loaded | Notes |
+| --- | --- | --- | --- |
+| Read from device | No | No | Loads result into hex panel |
+| Write to device | Yes | Yes | Confirm dialog; verify enabled by default |
+| Blank check | No | No | Pass = all `0xFF` |
+| Erase | Yes | No | Unavailable for UV EPROMs |
+| Compare vs file | No | No | Opens file picker for reference binary |
+| RAM / Logic test | No | No | SRAM and logic ICs only |
+| Pin check | No | No | Confirms ZIF socket contact |
+| Write to file | No | Yes | Saves in-memory buffer to disk |
+
+### Common File Paths
+
+| Path | Purpose |
+| --- | --- |
+| `~/.config/minigecko/state.json` | Persistent UI state |
+
+### Environment Variables
+
+| Variable | Value | Effect |
+| --- | --- | --- |
+| `MINIGECKO_EMULATE` | `1` | Enable emulator mode |
+| `MINIPRO_HOME` | `/path/to/dir` | Override `minipro` data file location |
 
 ## 15. Revision History
 
 | Version | Date | Notes |
 | --- | --- | --- |
 | 0.1 | 2026-03-19 | Initial skeleton |
+| 0.2 | 2026-03-19 | All sections complete |
 
 ## Appendix A: Fill Progress Checklist
 
-- [ ] About This Manual
-- [ ] What MiniGecko Is
-- [ ] Installation and Setup
-- [ ] Starting MiniGecko
-- [ ] Interface Tour
-- [ ] Keyboard Shortcuts
-- [ ] Chip Selection
-- [ ] File Operations
-- [ ] Device Operations
-- [ ] Safety and Best Practices
-- [ ] Configuration and Persistence
-- [ ] Troubleshooting
-- [ ] Glossary
-- [ ] Quick Reference
+- [x] About This Manual
+- [x] What MiniGecko Is
+- [x] Installation and Setup
+- [x] Starting MiniGecko
+- [x] Interface Tour
+- [x] Keyboard Shortcuts
+- [x] Chip Selection
+- [x] File Operations
+- [x] Device Operations
+- [x] Safety and Best Practices
+- [x] Configuration and Persistence
+- [x] Troubleshooting
+- [x] Glossary
+- [x] Quick Reference
