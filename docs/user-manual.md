@@ -545,59 +545,306 @@ Best practice:
 
 ### 8.1 Opening a File
 
-TODO: Document file picker usage and navigation.
+Use the file picker to load an existing binary file into the hex panel.
+
+Ways to open the file picker:
+
+- Press `f` from the main screen.
+
+File picker behavior:
+
+- The picker opens as a modal dialog over the main interface.
+- It starts in the last directory you used, or your home directory if no
+	previous location has been saved.
+- The current directory is shown as a navigable tree.
+- The `↑ ..` control moves up to the parent directory.
+
+How to choose a file:
+
+- Select a file in the directory tree and press `Enter`.
+- Double-click a file to open it immediately.
+- Press `Escape` to cancel without loading anything.
+
+After a file is opened:
+
+- MiniGecko remembers that file's parent directory for next time.
+- The application subtitle updates to include the file path.
+- The action log records the opened filename and size.
+- The hex panel refreshes to show the file contents.
 
 ### 8.2 Saving to a File
 
-TODO: Document write-to-file workflow.
+The write-to-file operation saves the current in-memory data to a file you
+choose. It is available from the IC operations menu as `Write to file`.
+
+Preconditions:
+
+- Data must be loaded, either from a file you opened or from a previous device
+  read operation.
+- If no data is loaded, MiniGecko logs a warning and the operation does nothing.
+
+Workflow:
+
+1. Open the IC operations menu with `d` or by clicking `IC Ops`.
+2. Click `Write to file`.
+3. The file picker opens. Navigate to the target directory and select a
+   destination path.
+4. Confirm with `Enter`.
+
+After saving:
+
+- The action log records the save event with the destination filename.
+- The application subtitle updates to reflect the new file path.
+- The saved file becomes the new active data source.
 
 ### 8.3 Data Display Limits
 
-TODO: Document max display size and truncation notes.
+The hex panel renders binary data in memory and has a practical display cap.
+
+- Files larger than 10 MB are truncated for display purposes only.
+- When truncation occurs, MiniGecko shows the first 10 MB of the file in the
+  hex panel and appends a notice at the end of the visible content.
+- The full, unmodified file is still used as the write source for device
+  operations and file save operations.
+- The truncation only affects what is visible — it does not alter file contents
+  or affect write accuracy.
 
 ## 9. Device Operations
 
 ### 9.1 Read from Device
 
-TODO: Describe flow, outputs, and common warnings.
+Reads the entire contents of the selected chip into a temporary file, then
+loads the data into the hex panel.
+
+Workflow:
+
+1. Select a chip and open `IC Ops`.
+2. Click `Read from device`.
+3. A progress bar shows streaming percentage while the read operation runs.
+4. On success, the action log reports the byte count and the hex panel updates.
+
+Warnings:
+
+- If `minipro` detects a chip ID mismatch, MiniGecko logs a warning but
+  proceeds with the read. Review the IC information panel to confirm you have
+  the correct part selected before proceeding.
+- On failure, the action log shows the raw error from `minipro`.
 
 ### 9.2 Write to Device
 
-TODO: Describe confirmation, safety checks, and verify-after-write.
+Writes the current in-memory data buffer to the selected chip.
+
+DESTRUCTIVE ACTION: This permanently overwrites the device contents.
+
+Preconditions:
+
+- Data must be loaded from a file or a previous read operation.
+- If no data is loaded, MiniGecko logs a warning and cancels the operation.
+
+Workflow:
+
+1. Load or read the data you want to write.
+2. Open `IC Ops` and click `Write to device`.
+3. A confirmation dialog appears showing the data source name and a warning.
+4. Optionally toggle the `Verify after write` checkbox (enabled by default).
+5. Press `Enter` to confirm or `Escape` to cancel.
+6. A progress bar shows streaming percentage while the write runs.
+7. If verify is enabled, MiniGecko reads the device back and compares it
+   against the written file. The log reports how many bytes match.
+
+NOTE: Verify after write reads the device a second time and performs a
+byte-by-byte comparison. A mismatch is reported with a byte count and
+percentage.
 
 ### 9.3 Blank Check
 
-TODO: Explain pass/fail meaning.
+Verifies that every byte in the selected device reads as `0xFF`, indicating
+the chip is in a fully erased state.
+
+Workflow:
+
+1. Open `IC Ops` and click `Blank Check`.
+2. `minipro` checks the device contents.
+3. The action log reports pass or fail.
+
+Result interpretation:
+
+- Pass (`all 0xFF`): the device is blank and ready to program.
+- Fail (`not blank`): the device contains data and should be erased before
+  writing unless you intend to overwrite it.
 
 ### 9.4 Erase
 
-TODO: Explain electrical erase vs UV-only devices.
+Electrically erases the selected device.
+
+DESTRUCTIVE ACTION: All chip contents will be permanently lost.
+
+Workflow:
+
+1. Open `IC Ops` and click `Erase`.
+2. A confirmation dialog appears with the chip name and a warning.
+3. Two optional checkboxes are available:
+   - `Blank check after erase` (enabled by default): runs a blank check
+     immediately after erase to confirm the device is fully cleared.
+   - `Read after erase` (disabled by default): reads the device contents
+     into the hex panel after erasing.
+4. Press `Enter` to confirm or `Escape` to cancel.
+5. A progress bar tracks the erase operation.
+
+UV EPROM handling:
+
+- Some older EPROMs, such as the 27C-series, cannot be erased electrically.
+- For these devices the `Erase` button in the IC operations menu is disabled
+  and replaced with a notice.
+- These parts require a UV eraser lamp (approximately 253 nm for roughly
+  30 minutes). MiniGecko cannot perform or trigger this process.
 
 ### 9.5 Compare vs File
 
-TODO: Explain comparison output and mismatch reporting.
+Reads the current device contents and compares them byte-by-byte against a
+reference file you choose.
+
+Workflow:
+
+1. Open `IC Ops` and click `Compare vs file…`.
+2. The file picker opens. Select the reference binary.
+3. MiniGecko reads the device to a temporary file.
+4. The two files are compared byte-by-byte.
+5. The action log reports the result.
+
+Result interpretation:
+
+- Match: the action log reports identical byte counts.
+- Mismatch: the log reports how many bytes differ and the percentage mismatch.
+- Size mismatch: if the device read and reference file are different sizes,
+  this is logged as a separate size warning before the comparison.
 
 ### 9.6 RAM or Logic Test
 
-TODO: Explain supported devices and result interpretation.
+Runs `minipro`'s built-in test vector suite against SRAM and logic ICs.
+
+Supported device types:
+
+- SRAM devices.
+- Logic ICs with test vectors defined in `minipro`'s `logicic.xml` database.
+
+Workflow:
+
+1. Select an SRAM or logic IC and open `IC Ops`.
+2. Click `RAM / Logic Test`.
+3. `minipro` drives the test vectors and reports results.
+4. The action log shows the outcome.
+
+Result interpretation:
+
+- Pass: the log reports all cells or vectors passed.
+- Fail: the log reports the error count, summary, and a per-pin detail table
+  when available.
 
 ### 9.7 Pin Check
 
-TODO: Explain contact failures and troubleshooting tips.
+Verifies that all device pins make proper electrical contact in the ZIF socket.
+
+Workflow:
+
+1. Open `IC Ops` and click `Pin Check`.
+2. `minipro` checks each pin for contact.
+3. The action log reports pass or fail.
+
+Result interpretation:
+
+- Pass (`all pins contact`): the device is seated correctly.
+- Fail: the action log shows which pins failed contact. This usually indicates
+  a seating issue.
+
+Troubleshooting:
+
+- Remove and re-insert the device, ensuring correct orientation and alignment.
+- Ensure pins are not bent.
+- Clean the ZIF socket contacts if contact failures persist.
+- Run pin check again before any write or erase operation to confirm seating.
 
 ## 10. Safety and Best Practices
 
 ### 10.1 Before You Program
 
-TODO: Add checklist for voltage, orientation, and part ID confirmation.
+Run through this checklist before any write or erase operation.
+
+Device identity:
+
+- Confirm the full part number on the physical device matches the chip you
+  selected in MiniGecko.
+- Check the package type and pin count in the IC information panel match
+  the physical device.
+- If the chip ID flag is enabled for the device, review any chip ID mismatch
+  warnings in the action log before continuing.
+
+Orientation and seating:
+
+- Insert the device into the ZIF socket in the correct orientation. Most DIP
+  packages have pin 1 marked with a notch or dot.
+- Confirm the lever is fully closed.
+- Run a pin check before programming to detect poor contact early.
+
+Data source:
+
+- Confirm the file loaded in the hex panel is the correct binary.
+- If you have any doubt, compare it against a known-good reference using
+  `Compare vs file…` before writing.
 
 ### 10.2 Destructive Operations
 
-TODO: Add backup-first guidance for erase/write operations.
+Write and erase operations permanently alter device contents and cannot be
+undone from within MiniGecko.
+
+Before erasing:
+
+- If the device contains data you may need again, read it first and save the
+  result to a file using `Write to file`.
+- Keep at least one backup copy of original device contents before erasing
+  or overwriting, especially for one-time-programmable or hard-to-source parts.
+
+Before writing:
+
+- Erase the device first if it is not already blank, unless the device
+  supports overwrite without prior erase (some EEPROMs do).
+- Use `Blank Check` to confirm the device is ready before writing.
+
+After writing:
+
+- Leave `Verify after write` enabled unless you have a specific reason to
+  skip it. A failed verify immediately after a successful write usually
+  indicates a seating issue or a marginal device.
+
+WARNING: There is no undo. Once erased or overwritten, the previous device
+contents are gone.
 
 ### 10.3 Verification Strategy
 
-TODO: Recommend verify and compare routines.
+Use MiniGecko's built-in verification tools as a routine part of every
+programming session, not just when something looks wrong.
+
+Recommended sequence for writing a device:
+
+1. Read the blank or original device and save it as a backup file.
+2. Run Blank Check to confirm the device is ready for writing.
+3. Write the target binary with `Verify after write` enabled.
+4. If verify reports a mismatch, re-seat the device, run Pin Check, and
+   repeat the write.
+
+Additional spot-checks:
+
+- Use `Compare vs file…` after a session to confirm device contents match
+  your source binary independently of the write operation's own verify step.
+- After an erase, always run Blank Check before writing. Even if the erase
+  reported success, a failed blank check indicates a problem worth
+  investigating before you commit new data.
+
+For critical or hard-to-replace devices:
+
+- Read back and save the programmed contents to a separate file.
+- Diff that file externally against your source binary if you want a third
+  point of confirmation beyond MiniGecko's built-in compare.
 
 ## 11. Configuration and Persistence
 

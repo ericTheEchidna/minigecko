@@ -140,6 +140,25 @@ class ChipSelectScreen(ModalScreen[str | None]):
 
     def on_input_changed(self, event: Input.Changed) -> None:
         self._refilter()
+        lv = self.query_one("#cs-list", ListView)
+        if self._filtered:
+            lv.index = 0
+
+    def on_key(self, event) -> None:
+        if not self.query_one("#cs-filter", Input).has_focus:
+            return
+        lv = self.query_one("#cs-list", ListView)
+        if not self._filtered:
+            return
+        if event.key == "down":
+            idx = lv.index
+            lv.index = min((idx or 0) + 1, len(self._filtered) - 1)
+            event.prevent_default()
+        elif event.key == "up":
+            idx = lv.index
+            if idx is not None and idx > 0:
+                lv.index = idx - 1
+            event.prevent_default()
 
     def action_confirm(self) -> None:
         lv = self.query_one("#cs-list", ListView)

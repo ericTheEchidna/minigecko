@@ -67,15 +67,22 @@ class ICOpsScreen(ModalScreen[None]):
         color: $text; background: $panel-lighten-1;
     }
     ICOpsScreen .ops-btn:hover { background: $accent-darken-2; color: $text; }
+    ICOpsScreen .ops-btn-active { padding: 0 1; margin-bottom: 0; color: $text; background: $accent-darken-2; }
     ICOpsScreen .ops-disabled { color: $text-muted; background: transparent; }
     ICOpsScreen #ops-status { color: $text-muted; margin-top: 1; height: 1; }
     """
 
-    BINDINGS = [("escape", "dismiss(None)", "Cancel")]
+    BINDINGS = [
+        ("escape", "dismiss(None)", "Cancel"),
+        ("up", "move(-1)", "Up"),
+        ("down", "move(1)", "Down"),
+        ("enter", "activate", "Select"),
+    ]
 
     def __init__(self, ic_name: str, chip_type: int = 1, is_isp: bool = False, can_erase: bool = True) -> None:
         super().__init__()
         self._ic_name = ic_name
+        self._cursor: int = 0
         self._ops = list(_OPS_BY_TYPE.get(chip_type, _OPS_DEFAULT))
         if not can_erase and any(op_id == "erase" for op_id, _, _ in self._ops):
             result = []
@@ -100,8 +107,39 @@ class ICOpsScreen(ModalScreen[None]):
             yield Static("", id="ops-status")
         yield Footer()
 
+    def _actionable_ids(self) -> list[str]:
+        """Return widget IDs of non-disabled ops in order."""
+        return [f"op-{op_id}" for op_id, _, disabled in self._ops if not disabled]
+
+    def _update_highlight(self) -> None:
+        ids = self._actionable_ids()
+        for i, wid in enumerate(ids):
+            w = self.query_one(f"#{wid}", Static)
+            w.set_classes("ops-btn-active" if i == self._cursor else "ops-btn")
+
+    def on_mount(self) -> None:
+        self._cursor = 0
+        self._update_highlight()
+
+    def action_move(self, delta: int) -> None:
+        ids = self._actionable_ids()
+        if not ids:
+            return
+        self._cursor = max(0, min(self._cursor + delta, len(ids) - 1))
+        self._update_highlight()
+
+    def action_activate(self) -> None:
+        ids = self._actionable_ids()
+        if not ids or self._cursor >= len(ids):
+            return
+        self._dispatch_op(ids[self._cursor])
+
     def on_click(self, event) -> None:
         widget_id = getattr(event.widget, "id", None) or ""
+        if widget_id.startswith("op-"):
+            self._dispatch_op(widget_id)
+
+    def _dispatch_op(self, widget_id: str) -> None:
         if widget_id == "op-pin_check":
             self.dismiss(None)
             self.app.run_pin_check_op(self._ic_name)
