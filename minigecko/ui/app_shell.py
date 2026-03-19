@@ -15,7 +15,7 @@ from textual.widgets import Footer, Header, Static
 
 from minigecko import __version__
 from minigecko.ui.hexdump import _MAX_BYTES, _iter_hexdump
-from minigecko.ui.modals import ChipSelectScreen, FilePickerScreen, ICOpsScreen, infer_chip_type
+from minigecko.ui.modals import ChipSelectScreen, FilePickerScreen, HelpScreen, ICOpsScreen, infer_chip_type
 from minigecko.ui.panels import ActionLogPanel, HexPanel, ICInfoPanel
 from minigecko.ui.state import _load_state, _save_state
 from minigecko.ui.toolbar import Toolbar
@@ -454,4 +454,4 @@ class MinigeckoApp(App):
         self.log_action("[dim]TOOLS  not implemented yet[/]")
 
     def action_help(self) -> None:
-        self.log_action("[dim]HELP  not implemented yet[/]")
+        self.push_screen(HelpScreen())
