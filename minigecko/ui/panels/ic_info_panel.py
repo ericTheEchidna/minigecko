@@ -19,6 +19,7 @@ class ICInfoPanel(VerticalScroll):
     }
     ICInfoPanel #ic-name       { text-style: bold; color: $accent; }
     ICInfoPanel #ic-chip-info  { color: $text-muted; margin-bottom: 1; }
+    ICInfoPanel #ic-desc       { color: $text; margin-bottom: 1; }
     ICInfoPanel #ic-flags      { margin-bottom: 1; }
     ICInfoPanel #ic-search-placeholder { margin-top: 1; }
     """
@@ -30,12 +31,13 @@ class ICInfoPanel(VerticalScroll):
     def compose(self) -> ComposeResult:
         yield Static("No IC selected.", id="ic-name")
         yield Static("", id="ic-chip-info")
+        yield Static("", id="ic-desc")
         yield Static("", id="ic-flags")
         yield Static("", id="ic-search-placeholder")
 
     def show(self, name: str) -> None:
         from rich.table import Table
-        from minigecko.core import ddg_url, decode_flags, get_device
+        from minigecko.core import ddg_url, decode_flags, get_description, get_device
 
         self._current_name = name
         entry = get_device(name) or {}
@@ -54,6 +56,9 @@ class ICInfoPanel(VerticalScroll):
         if entry.get("is_isp"):
             parts.append("ISP")
         self.query_one("#ic-chip-info", Static).update("  ·  ".join(parts))
+
+        desc = get_description(name)
+        self.query_one("#ic-desc", Static).update(desc)
 
         flags_widget = self.query_one("#ic-flags", Static)
         if entry:

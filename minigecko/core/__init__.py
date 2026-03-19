@@ -6,7 +6,7 @@ Hardware abstraction layer.  Import from here, not from submodules.
 
 from .device_db import (
     TYPE_EEPROM, TYPE_MCU, TYPE_PLD, TYPE_SRAM, TYPE_LOGIC, TYPE_NAND, TYPE_EMMC, TYPE_VGA,
-    all_names, ddg_url, decode_flags, get_db, get_device,
+    all_names, ddg_url, decode_flags, get_db, get_description, get_device,
 )
 from .minipro import (
     ChipDevice,
@@ -42,6 +42,7 @@ __all__ = [
     "detect_programmer",
     "erase_device",
     "get_db",
+    "get_description",
     "get_device",
     "get_device_info",
     "is_available",

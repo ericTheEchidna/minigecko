@@ -300,6 +300,37 @@ def all_names() -> list[str]:
     return sorted(get_db().keys())
 
 
+# ---------------------------------------------------------------------------
+# Device descriptions
+# ---------------------------------------------------------------------------
+
+_DESCRIPTIONS: dict[str, str] | None = None
+_DESC_FILE = Path(__file__).resolve().parent.parent / "data" / "device_descriptions.txt"
+
+
+def _load_descriptions() -> dict[str, str]:
+    descs: dict[str, str] = {}
+    if not _DESC_FILE.exists():
+        return descs
+    for line in _DESC_FILE.read_text(encoding="utf-8").splitlines():
+        parts = line.split("\t")
+        if len(parts) < 2:
+            continue
+        name = parts[0].strip()
+        desc = parts[1].strip()
+        if desc.startswith("DESCRIPTION: "):
+            desc = desc[len("DESCRIPTION: "):]
+        if name and desc:
+            descs[name] = desc
+    return descs
+
+
+def get_description(name: str) -> str:
+    """Return a short description for a device, or '' if unknown."""
+    global _DESCRIPTIONS
+    if _DESCRIPTIONS is None:
+        _DESCRIPTIONS = _load_descriptions()
+    return _DESCRIPTIONS.get(name, "")
 
 
 def ddg_url(name: str) -> str:
