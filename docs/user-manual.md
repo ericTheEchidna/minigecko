@@ -410,6 +410,7 @@ Chip selection dialog:
 
 | Key | Action |
 | --- | --- |
+| `Left` / `Right` | Cycle through chip type categories (when search box is empty) |
 | `Up` / `Down` | Move between results (works from the search input) |
 | `Enter` | Select the highlighted device |
 | `Escape` | Cancel and close the dialog |
@@ -1198,6 +1199,7 @@ force. A fully closed lever is required for reliable contact.
 | Key | Action |
 | --- | --- |
 | Type to search | Filter by name (case-insensitive) |
+| `Left` / `Right` | Cycle through chip type categories (when search box is empty) |
 | `Up` / `Down` | Move between results (works from the search input) |
 | `Enter` | Select highlighted device |
 | `Escape` | Cancel |
