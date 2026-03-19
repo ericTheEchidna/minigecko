@@ -101,6 +101,16 @@ class ChipSelectScreen(ModalScreen[str | None]):
         self._category = type_id
         self._refilter()
 
+    def action_prev_category(self) -> None:
+        ids = [tid for tid, _ in self._CATEGORIES]
+        idx = ids.index(self._category)
+        self._set_category(ids[(idx - 1) % len(ids)])
+
+    def action_next_category(self) -> None:
+        ids = [tid for tid, _ in self._CATEGORIES]
+        idx = ids.index(self._category)
+        self._set_category(ids[(idx + 1) % len(ids)])
+
     def _candidates(self) -> list[str]:
         if self._category == 0:
             return [name for name, _ in self._all_devices]
@@ -145,7 +155,19 @@ class ChipSelectScreen(ModalScreen[str | None]):
             lv.index = 0
 
     def on_key(self, event) -> None:
-        if not self.query_one("#cs-filter", Input).has_focus:
+        input_widget = self.query_one("#cs-filter", Input)
+
+        # Left/right navigate categories when the search box is empty so that
+        # cursor movement within search text still works normally.
+        if event.key in ("left", "right") and not input_widget.value:
+            if event.key == "left":
+                self.action_prev_category()
+            else:
+                self.action_next_category()
+            event.prevent_default()
+            return
+
+        if not input_widget.has_focus:
             return
         lv = self.query_one("#cs-list", ListView)
         if not self._filtered:
