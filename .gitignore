@@ -56,3 +56,4 @@ TASKS.md
 identify_devices.py
 .claude/settings.local.json
 checks.json
+scripts/fix_descriptions.py
