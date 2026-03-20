@@ -2,15 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from textual.events import MouseDown, MouseMove, MouseUp
 from textual.widgets import Static
-
-from minigecko.ui.panels import HexPanel, ICInfoPanel
-
-if TYPE_CHECKING:
-    from minigecko.ui.app_shell import MinigeckoApp
 
 
 class ResizeHandle(Static):
@@ -35,7 +28,7 @@ class ResizeHandle(Static):
     def on_mouse_down(self, event: MouseDown) -> None:
         self._dragging = True
         self._start_x = event.screen_x
-        panel = self.app.query_one(HexPanel)
+        panel = self.app.query_one("HexPanel")
         self._start_width = panel.styles.width.value  # type: ignore[union-attr]
         self.capture_mouse()
 
@@ -44,7 +37,7 @@ class ResizeHandle(Static):
             return
         delta = event.screen_x - self._start_x
         new_width = max(20, int(self._start_width + delta))
-        self.app.query_one(HexPanel).styles.width = new_width
+        self.app.query_one("HexPanel").styles.width = new_width
 
     def on_mouse_up(self, _: MouseUp) -> None:
         self._dragging = False
@@ -74,7 +67,7 @@ class VResizeHandle(Static):
     def on_mouse_down(self, event: MouseDown) -> None:
         self._dragging = True
         self._start_y = event.screen_y
-        panel = self.app.query_one(ICInfoPanel)
+        panel = self.app.query_one("ICInfoPanel")
         self._start_height = panel.styles.height.value  # type: ignore[union-attr]
         self.capture_mouse()
 
@@ -83,7 +76,7 @@ class VResizeHandle(Static):
             return
         delta = event.screen_y - self._start_y
         new_height = max(4, int(self._start_height + delta))
-        self.app.query_one(ICInfoPanel).styles.height = new_height
+        self.app.query_one("ICInfoPanel").styles.height = new_height
 
     def on_mouse_up(self, _: MouseUp) -> None:
         self._dragging = False
