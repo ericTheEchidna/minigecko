@@ -240,20 +240,19 @@ def detect_programmer() -> ProgrammerInfo:
 def list_devices(filter_str: str = "") -> list[ChipDevice]:
     """
     Return all supported devices, optionally filtered by *filter_str*.
-    Wraps `minipro -l [filter]`.
+    Wraps `minipro -l` and filters client-side for compatibility.
     """
-    args = ["-l"]
-    if filter_str:
-        args.append(filter_str)
-
-    result = _run(args)
+    result = _run(["-l"])
     if not result.ok:
         return []
 
     devices: list[ChipDevice] = []
+    filt = filter_str.upper()
     for line in result.stdout.splitlines():
         line = line.strip()
         if not line or line.startswith("Found") or line.startswith("Device"):
+            continue
+        if filt and filt not in line.upper():
             continue
         devices.append(ChipDevice(name=line))
     return devices

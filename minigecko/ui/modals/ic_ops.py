@@ -14,7 +14,8 @@ from minigecko.ui.modals.confirmations import EraseConfirmScreen, WriteConfirmSc
 from minigecko.ui.modals.file_picker import FilePickerScreen
 
 _PIN = ("pin_check", "Pin Check", False)
-_TEST = ("logic_test", "RAM / Logic Test", False)
+_TEST = ("logic_test", "Logic Test", False)
+_RAMTEST = ("logic_test", "RAM Test", False)
 _READ = ("read", "Read from device", False)
 _WDEV = ("write_device", "Write to device", False)
 _WFILE = ("write_file", "Write to file", False)
@@ -26,7 +27,7 @@ _OPS_BY_TYPE: dict[int, list] = {
     1: [_PIN, _READ, _WDEV, _WFILE, _BLANK, _ERASE, _CMP],
     2: [_PIN, _READ, _WDEV, _WFILE, _BLANK, _ERASE, _CMP],
     3: [_PIN, _READ, _WDEV, _BLANK, _ERASE],
-    4: [_TEST],
+    4: [ _RAMTEST],
     5: [_TEST],
     6: [_PIN, _READ, _WDEV, _WFILE, _BLANK, _ERASE, _CMP],
     7: [_PIN, _READ, _WDEV, _WFILE],
