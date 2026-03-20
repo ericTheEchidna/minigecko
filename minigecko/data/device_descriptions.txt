@@ -9325,8 +9325,8 @@ S30MS04GR25Txx11@TSOP48	528MB NAND Flash Memory IC	0.90
 S30MS04GR25Txx11@TSOP48	528MB NAND Flash Memory IC	0.90
 S30MS04GR25Txx21@TSOP48	NAND Flash Memory, 528MB Code Memory	0.90
 S30MS04GR25Txx21@TSOP48	NAND Flash Memory, 528MB Code Memory	0.90
-S34ML02G104TFI01@TSOP48	SLC NAND Flash Memory with ONFI 1.0 compliance, 264MB容量, 3.3-V兼容供电，具有OTP区域和安全特性。	0.90
-S34ML02G104TFI01@TSOP48	SLC NAND Flash Memory with ONFI 1.0 compliance, 264MB容量, 3.3-V兼容供电，具有OTP区域和安全特性。	0.90
+S34ML02G104TFI01@TSOP48	SLC NAND Flash Memory with ONFI 1.0 compliance, 264MB, 3.3-VOTP	0.90
+S34ML02G104TFI01@TSOP48	SLC NAND Flash Memory with ONFI 1.0 compliance, 264MB, 3.3-VOTP	0.90
 S34ML02G104Txx01@TSOP48	SLC NAND Flash Memory with ONFI 1.0 compliance, 264MB capacity	0.90
 S34ML02G104Txx01@TSOP48	SLC NAND Flash Memory with ONFI 1.0 compliance, 264MB capacity	0.90
 S34ML02G104BHI01@VFBGA63	SLC NAND Flash Memory with 2GB of storage, compatible with ONFI 1.0, operating voltage from 2.7V to 3.6V	0.90
@@ -9550,7 +9550,7 @@ DWS3S02A(x1+ISP)@WSON8	32K x 8 SPI Quad NAND Flash with x1 Interface	0.60
 DWS3S04A(x4)@WSON8	2Gbit x4 Serial NAND Flash Memory	0.90
 DWS3S04A(x1+ISP)@WSON8	4Gb x1 SPI NAND Flash Memory IC	0.80
 SXMICROSS01A(x4)@WSON8	High-density SPI-compatible Serial NAND Flash Memory with x4 data line support	0.80
-SXMICROSS01A(x1+ISP)@WSON8	SPI NAND Flash Memory with 4Gb容量 (MT29F4G01AAADD)	0.80
+SXMICROSS01A(x1+ISP)@WSON8	SPI NAND Flash Memory with 4Gb (MT29F4G01AAADD)	0.80
 SXMICROSS02A(x4)@WSON8	4Gb x1 SPI NAND Flash Memory (Possible Micron MT29F4G01AAADD variant)	0.80
 SXMICROSS02A(x1+ISP)@WSON8	4Gb x1 SPI NAND Flash Memory	0.90
 SXMICROSS04A(x4)@WSON8	2Gbit Serial NAND Flash Memory	0.90
@@ -13136,7 +13136,7 @@ GD5F4GQ4UC(x4)@BGA24	SPI (x1/x2/x4) NAND Flash manufactured by GigaDevice	0.90
 GD5F4GM5UF(x4)@WSON8	GD5F SPI NAND Flash with 4 Megabit capacity	0.90
 GD5F4GQ4UC(x1+ISP)@WSON8	SPI (x1/x2/x4) NAND Flash manufactured by GigaDevice	0.90
 GD5F4GQ4UC(x1+ISP)@BGA24	SPI (x1/x2/x4) NAND Flash manufactured by GigaDevice	0.90
-GD5F4GM5UF(x1+ISP)@WSON8	SPI NAND Flash with 4M bytes of memory容量为4MB的SPI NAND闪存	0.80
+GD5F4GM5UF(x1+ISP)@WSON8	SPI NAND Flash with 4M bytes of memory4MBSPI NAND	0.80
 GD5F4GQ4RC(x4)@WSON8	SPI (x4) NAND Flash Memory	0.80
 GD5F4GQ4RC(x4)@BGA24	SPI (x4) NAND Flash Memory	0.80
 GD5F4GM5RF(x4)@WSON8	32K x 8 SPI NAND Flash IC	0.90
@@ -13152,7 +13152,7 @@ GD5F4GM8REBIG(x1+ISP)@BGA24	8MB SPI NAND Flash Memory	0.90
 GD5F4GM8UEYIG(x4)@WSON8(8x6)	4Gbit SPI NAND Flash Memory IC, Quad I/O	0.90
 GD5F4GM8UEWIG(x4)@WSON8(5x5)	8Gb SPI NAND Flash Memory	0.90
 GD5F4GM8UEBIG(x4)@BGA24	32Mbit (4MB) SPI NAND Flash Memory	0.90
-GD5F4GM8UEYIG(x1+ISP)@WSON8(8x6)	SPI NAND Flash Memory IC, 4GB容量	0.90
+GD5F4GM8UEYIG(x1+ISP)@WSON8(8x6)	SPI NAND Flash Memory IC, 4GB	0.90
 GD5F4GM8UEWIG(x1+ISP)@WSON8(5x5)	8Gb SPI NAND Flash Memory	0.90
 GD5F4GM8UEBIG(x1+ISP)@BGA24	SPI NAND Flash with 8 Mb storage capacity	0.90
 GD5F4GQ6RExxG(x4)@WSON8	GigaDevice SPI NAND Flash with 512K x 8 bits memory	0.90
@@ -13449,7 +13449,7 @@ HYF2GQ4IAACAE(x1+ISP)@WSON8	2GB x 8 SPI NAND Flash Memory	0.90
 HYF2GQ4UAACAE(x4)@WSON8	32K x 8 SPI NAND Flash Memory	0.90
 HYF2GQ4UAACAE(x1+ISP)@WSON8	32K x 8 SLC NAND Flash Memory	0.90
 HYF2GQ4UADCAE(x4)@BGA24	256MB SLC SPI NAND Flash Memory (TFBGA24 Package)	0.90
-HYF2GQ4UADCAE(x1+ISP)@BGA24	2Gb SLC SPI NAND Flash (TFBGA24封装)	0.90
+HYF2GQ4UADCAE(x1+ISP)@BGA24	2Gb SLC SPI NAND Flash (TFBGA24)	0.90
 HYF2GQ4UTACAE(x4)@WSON8	32K x 8 Bit SPI NAND Flash Memory with x4 Mode Support	0.90
 HYF2GQ4UTACAE(x1+ISP)@WSON8	2Gbit NAND Flash Memory	0.90
 HYF2GQ4UTDCAE(x4)@BGA24	2GB x 8 SPI Quad NAND Flash Memory	0.90
@@ -14152,7 +14152,7 @@ H26M52103FMRA_8Bit@BGA153	512B Code Memory, 32B Data Memory eMMC NAND Flash	0.90
 H26M51002HPR_8Bit@BGA153	16GB eMMC Flash Memory IC	0.90
 H26M68002DCR_8Bit@BGA153	eMMC Flash Memory with 64GB Capacity, FBGA153 Package	0.90
 H26M68003DMR_8Bit@BGA153	8 GB eMMC Memory Chip from Hynix	0.90
-H26M64003DQR_8Bit@BGA169	NAND Flash Memory,容量未明确指出具体大小，但根据代码记忆体为512B和数据记忆体为32B的信息推断，可能是某种形式的eMMC或固态硬盘闪存芯片。	0.70
+H26M64003DQR_8Bit@BGA169	NAND Flash Memory,512B32BeMMC	0.70
 H26M64003DQRA_8Bit@BGA169	NAND Flash (eMMC, SLC/MLC), 64MB Capacity	0.90
 H26M64103EMR_8Bit@BGA153	32GB eMMC Flash Memory	0.90
 H26M64103EMRA_8Bit@BGA153	NAND Flash (SLC, MLC, eMMC, E2NAND3.0, Solid State Drive)	0.90
@@ -14354,7 +14354,7 @@ H9DF32A6AJACGR(ISP)_1Bit	Interface for Direct eMMC (ISP) dumping, possibly relat
 H9TQ17ABJTMCUR(ISP)_1Bit	16GB eNAND (x8) with LPDDR3 16Gb (x32) memory interface	0.90
 H9TQ27ADFTMCUR(ISP)_1Bit	Multichip Package with 32GB eMMC and 3GB LPDDR3 DRAM	0.90
 H9TQ17ABJTMCUR_8Bit@BGA221	16GB eNAND Flash Memory + 16Gb LPDDR3 SDRAM, manufactured by Hynix Semiconductor	0.90
-H9TQ27ADFTMCUR_8Bit@BGA221	NAND Flash Memory IC, likely 32GB容量的eMMC存储解决方案的一部分。	0.80
+H9TQ27ADFTMCUR_8Bit@BGA221	NAND Flash Memory IC, likely 32GBeMMC	0.80
 H9TQ17ABJTMCUR_4Bit@BGA221	16GB eNAND (x8) + 16Gb LPDDR3 (x32)	0.90
 H9TQ27ADFTMCUR_4Bit@BGA221	SK hynix H9TQ27ADFTMC eMMC Flash Memory (32GB)	0.80
 H9TQ17ABJTMCUR_1Bit@BGA221	16GB eNAND Flash Memory with 16Gb LPDDR3 SDRAM, eMMC5.0 compatible	0.90
@@ -15105,8 +15105,8 @@ TE28F320C3T@TSOP48	3 Volt Intel Advanced+ Boot Block Flash Memory	0.90
 TE28F320C3B@TSOP48	3 Volt Intel Advanced+ Boot Block Flash Memory	0.90
 JS28F800B3T@TSOP48	1MB Advanced Boot Block Flash Memory with Flexible SmartVoltage Technology	0.90
 JS28F800B3B@TSOP48	1MB Advanced Boot Block Flash Memory with Flexible SmartVoltage Technology	0.90
-TE28F800B3T@TSOP48	SMART 3 Advanced Boot Block Flash Memory, 1MB (1024K x 16)容量	1.00
-TE28F800B3B@TSOP48	SMART 3 Advanced Boot Block Flash Memory, 1MB (1024K x 16)容量	1.00
+TE28F800B3T@TSOP48	SMART 3 Advanced Boot Block Flash Memory, 1MB (1024K x 16)	1.00
+TE28F800B3B@TSOP48	SMART 3 Advanced Boot Block Flash Memory, 1MB (1024K x 16)	1.00
 JS28F800C3T@TSOP48	1MB Parallel EEPROM	0.90
 JS28F800C3B@TSOP48	1MB Parallel EEPROM	0.90
 TE28F800C3T@TSOP48	3 Volt Intel Advanced+ Boot Block Flash Memory with 1MB Code Memory	0.90
@@ -16538,8 +16538,8 @@ KE44E-26BN/4GB_8Bit@BGA169	4GB eMMC Memory IC	0.90
 KE4CN2H5X_8Bit@BGA153	Kingston eMMC™ Flash Memory IC with 4GB capacity and BGA-153 package	0.80
 EMMC04G-W100_8Bit@BGA153	Embedded MultiMedia Card (eMMC) with 4GB storage, compatible with W100 and E08U standards	0.90
 EMMC04G-W100_8Bit@BGA153	Embedded MultiMedia Card (eMMC) with 4GB storage, compatible with W100 and E08U standards	0.90
-EMMC04G-S100_8Bit@BGA153	Kingston's 4GB e•MMC Flash Memory IC, following the JEDEC e•MMC 5.0 standard	0.80
-EMMC04G-S100_8Bit@BGA153	Kingston's 4GB e•MMC Flash Memory IC, following the JEDEC e•MMC 5.0 standard	0.80
+EMMC04G-S100_8Bit@BGA153	Kingston's 4GB eMMC Flash Memory IC, following the JEDEC eMMC 5.0 standard	0.80
+EMMC04G-S100_8Bit@BGA153	Kingston's 4GB eMMC Flash Memory IC, following the JEDEC eMMC 5.0 standard	0.80
 KE44E-26BN/8GB_8Bit@BGA169	8GB eMMC Flash Memory Chip	0.90
 KE4CN3H5X_8Bit@BGA153	128GB+6GB LPDDR4X eMCP by Kingston Solutions	0.90
 EMMC08G-W100_8Bit@BGA153	Kingston Technology EMMC (eMMC) 8GB Flash Memory Module	0.90
@@ -16560,8 +16560,8 @@ EMMC16G-S110_8Bit@BGA153	16GB eMMC Flash Memory IC, likely with specific packagi
 EMMC16G-S110_8Bit@BGA153	16GB eMMC Flash Memory IC, likely with specific packaging and performance characteristics not fully detailed in the provided information	0.70
 EMMC16G-T527_8Bit@BGA153	16GB eMMC Flash memory with 8-bit interface	0.80
 EMMC16G-T527_8Bit@BGA153	16GB eMMC Flash memory with 8-bit interface	0.80
-EMMC16G-M525-X01U_8Bit@BGA153	16GB eMMC Flash Memory IC,符合JEDEC e•MMC 5.0标准	0.90
-EMMC16G-M525-X01U_8Bit@BGA153	16GB eMMC Flash Memory IC,符合JEDEC e•MMC 5.0标准	0.90
+EMMC16G-M525-X01U_8Bit@BGA153	16GB eMMC Flash Memory IC,JEDEC eMMC 5.0	0.90
+EMMC16G-M525-X01U_8Bit@BGA153	16GB eMMC Flash Memory IC,JEDEC eMMC 5.0	0.90
 EMMC16G-M525-B52_8Bit@BGA153	16GB eMMC Flash Memory IC, Model M525 Series from Kingston Technology, with B52_8 Specification	0.90
 EMMC16G-M525-B52_8Bit@BGA153	16GB eMMC Flash Memory IC, Model M525 Series from Kingston Technology, with B52_8 Specification	0.90
 EMMC16G-M525-A52_8Bit@BGA153	16GB eMMC Memory Card with A52 Controller	0.80
@@ -16614,13 +16614,13 @@ EMMC16G-M525-X01U_4Bit@BGA153	16GB eMMC Flash Memory IC	0.90
 EMMC16G-M525-X01U_4Bit@BGA153	16GB eMMC Flash Memory IC	0.90
 EMMC16G-M525-B52_4Bit@BGA153	High-Performance eMMC Storage Device by Kingston Technology	0.80
 EMMC16G-M525-B52_4Bit@BGA153	High-Performance eMMC Storage Device by Kingston Technology	0.80
-EMMC16G-M525-A52_4Bit@BGA153	16GB eMMC Storage IC, following the JEDEC e•MMC 5.1 standard, with MLC NAND and e•MMC controller in one package	0.80
-EMMC16G-M525-A52_4Bit@BGA153	16GB eMMC Storage IC, following the JEDEC e•MMC 5.1 standard, with MLC NAND and e•MMC controller in one package	0.80
-KE4BT5D6A_4Bit@BGA169	Kingston 32GB e•MMC Flash Memory Chip	0.90
+EMMC16G-M525-A52_4Bit@BGA153	16GB eMMC Storage IC, following the JEDEC eMMC 5.1 standard, with MLC NAND and eMMC controller in one package	0.80
+EMMC16G-M525-A52_4Bit@BGA153	16GB eMMC Storage IC, following the JEDEC eMMC 5.1 standard, with MLC NAND and eMMC controller in one package	0.80
+KE4BT5D6A_4Bit@BGA169	Kingston 32GB eMMC Flash Memory Chip	0.90
 EMMC32G-W100_4Bit@BGA153	32GB eMMC Flash Memory IC with Additional Configurations and Content Loading Service	0.80
 EMMC32G-W100_4Bit@BGA153	32GB eMMC Flash Memory IC with Additional Configurations and Content Loading Service	0.80
-EMMC32G-S100_4Bit@BGA153	32GB e•MMC Flash Memory IC	0.80
-EMMC32G-S100_4Bit@BGA153	32GB e•MMC Flash Memory IC	0.80
+EMMC32G-S100_4Bit@BGA153	32GB eMMC Flash Memory IC	0.80
+EMMC32G-S100_4Bit@BGA153	32GB eMMC Flash Memory IC	0.80
 EMMC32G-M525-X01U_4Bit@BGA153	32GB eMMC Flash Memory IC	0.90
 EMMC32G-M525-X01U_4Bit@BGA153	32GB eMMC Flash Memory IC	0.90
 EMMC32G-M525-B52_4Bit@BGA153	32GB eMMC Flash Memory IC for embedded systems, following the JEDEC eMMC 5.1 standard	0.80
@@ -16633,7 +16633,7 @@ EMMC64G-M525-B52_4Bit@BGA153	64GB eMMC Memory IC with M525-B52_4 Controller	0.80
 EMMC64G-M525-B52_4Bit@BGA153	64GB eMMC Memory IC with M525-B52_4 Controller	0.80
 EMMC64G-M525-A52_4Bit@BGA153	64GB eMMC Flash Memory IC	0.90
 EMMC64G-M525-A52_4Bit@BGA153	64GB eMMC Flash Memory IC	0.90
-KE44E-25AN/2GB_1Bit@BGA153	eMMC Flash Memory, 2GB容量，Kingston Solutions制造	0.80
+KE44E-25AN/2GB_1Bit@BGA153	eMMC Flash Memory, 2GBKingston Solutions	0.80
 KE44E-26BN/4GB_1Bit@BGA169	4GB eMMC Flash Memory IC	0.90
 KE4CN2H5X_1Bit@BGA153	2GB eMMC Flash memory with 1-bit interface	0.70
 EMMC04G-W100_1Bit@BGA153	4GB eMMC Flash Memory IC	0.90
@@ -16652,7 +16652,7 @@ EMMC08G-M325-B52_1Bit@BGA153	8GB eMMC 5.0 (HS400) IC	0.90
 EMMC08G-M325-B52_1Bit@BGA153	8GB eMMC 5.0 (HS400) IC	0.90
 EMMC08G-M325-A52_1Bit@BGA153	Embedded MultiMediaCard with 8GB storage, 32B ECC, A52 Secure Element	0.80
 EMMC08G-M325-A52_1Bit@BGA153	Embedded MultiMediaCard with 8GB storage, 32B ECC, A52 Secure Element	0.80
-KE4BT4B6A_1Bit@BGA169	Kingston 16GB eMMC Flash Memory Chip (32nm, JEDEC e•MMC4.41 standard)	0.90
+KE4BT4B6A_1Bit@BGA169	Kingston 16GB eMMC Flash Memory Chip (32nm, JEDEC eMMC4.41 standard)	0.90
 KE4CN4A5X_1Bit@BGA153	4GB eMMC Memory Chip with JEDEC 5.1 Compatibility	0.80
 EMMC16G-W100_1Bit@BGA153	16GB eMMC Flash Memory IC	0.90
 EMMC16G-W100_1Bit@BGA153	16GB eMMC Flash Memory IC	0.90
@@ -16664,17 +16664,17 @@ EMMC16G-M525-X01U_1Bit@BGA153	16GB eMMC Flash Memory Module	0.90
 EMMC16G-M525-X01U_1Bit@BGA153	16GB eMMC Flash Memory Module	0.90
 EMMC16G-M525-B52_1Bit@BGA153	Kingston® eMMC Flash memory with 16GB capacity, following the JEDEC eMMC 5.1 standard	0.90
 EMMC16G-M525-B52_1Bit@BGA153	Kingston® eMMC Flash memory with 16GB capacity, following the JEDEC eMMC 5.1 standard	0.90
-EMMC16G-M525-A52_1Bit@BGA153	16GB eMMC storage solution following the JEDEC e•MMC 5.1 standard, manufactured by Kingston Technology	0.90
-EMMC16G-M525-A52_1Bit@BGA153	16GB eMMC storage solution following the JEDEC e•MMC 5.1 standard, manufactured by Kingston Technology	0.90
+EMMC16G-M525-A52_1Bit@BGA153	16GB eMMC storage solution following the JEDEC eMMC 5.1 standard, manufactured by Kingston Technology	0.90
+EMMC16G-M525-A52_1Bit@BGA153	16GB eMMC storage solution following the JEDEC eMMC 5.1 standard, manufactured by Kingston Technology	0.90
 KE4BT5D6A_1Bit@BGA169	Kingston's 32GB eMMC Flash Memory Chip	0.90
 EMMC32G-W100_1Bit@BGA153	32GB eMMC Flash Memory IC from Kingston	0.90
 EMMC32G-W100_1Bit@BGA153	32GB eMMC Flash Memory IC from Kingston	0.90
-EMMC32G-S100_1Bit@BGA153	32GB e•MMC Flash Memory IC	0.90
-EMMC32G-S100_1Bit@BGA153	32GB e•MMC Flash Memory IC	0.90
-EMMC32G-M525-X01U_1Bit@BGA153	32GB eMMC Storage IC following JEDEC e•MMC 5.0 standard	0.90
-EMMC32G-M525-X01U_1Bit@BGA153	32GB eMMC Storage IC following JEDEC e•MMC 5.0 standard	0.90
-EMMC32G-M525-B52_1Bit@BGA153	32GB eMMC Flash Memory IC, Part of Kingston's A19nm e•MMCTM family following the JEDEC e•MMC 5.0 standard	0.80
-EMMC32G-M525-B52_1Bit@BGA153	32GB eMMC Flash Memory IC, Part of Kingston's A19nm e•MMCTM family following the JEDEC e•MMC 5.0 standard	0.80
+EMMC32G-S100_1Bit@BGA153	32GB eMMC Flash Memory IC	0.90
+EMMC32G-S100_1Bit@BGA153	32GB eMMC Flash Memory IC	0.90
+EMMC32G-M525-X01U_1Bit@BGA153	32GB eMMC Storage IC following JEDEC eMMC 5.0 standard	0.90
+EMMC32G-M525-X01U_1Bit@BGA153	32GB eMMC Storage IC following JEDEC eMMC 5.0 standard	0.90
+EMMC32G-M525-B52_1Bit@BGA153	32GB eMMC Flash Memory IC, Part of Kingston's A19nm eMMCTM family following the JEDEC eMMC 5.0 standard	0.80
+EMMC32G-M525-B52_1Bit@BGA153	32GB eMMC Flash Memory IC, Part of Kingston's A19nm eMMCTM family following the JEDEC eMMC 5.0 standard	0.80
 EMMC32G-M525-A52_1Bit@BGA153	Kingston eMMC 32GB Storage Module for Embedded Systems	0.90
 EMMC32G-M525-A52_1Bit@BGA153	Kingston eMMC 32GB Storage Module for Embedded Systems	0.90
 EMMC64G-M525-X01U_1Bit@BGA153	64GB eMMC Flash Memory - BGA-153 Package	0.90
@@ -16769,8 +16769,8 @@ EMMC16G-M525-A52(ISP)_1Bit	16GB eMMC Flash Memory IC with ISP Function	0.80
 KE4BT5D6A(ISP)_1Bit	Kingston's 32GB eMMC Flash Memory Chip	0.90
 EMMC32G-W100(ISP)_1Bit	32GB eMMC Flash Memory IC	0.90
 EMMC32G-W100(ISP)_1Bit	32GB eMMC Flash Memory IC	0.90
-EMMC32G-S100(ISP)_1Bit	32GB e•MMC Flash Memory IC	0.80
-EMMC32G-S100(ISP)_1Bit	32GB e•MMC Flash Memory IC	0.80
+EMMC32G-S100(ISP)_1Bit	32GB eMMC Flash Memory IC	0.80
+EMMC32G-S100(ISP)_1Bit	32GB eMMC Flash Memory IC	0.80
 EMMC32G-M525-X01U(ISP)_1Bit	32GB eMMC Flash Memory IC	0.90
 EMMC32G-M525-X01U(ISP)_1Bit	32GB eMMC Flash Memory IC	0.90
 EMMC32G-M525-B52(ISP)_1Bit	32GB eMMC Flash Memory with ISP Function	0.90
@@ -16789,9 +16789,9 @@ EMMC08G-W325-X01U_8Bit@BGA153	8GB eMMC Flash Memory IC	0.90
 EMMC08G-S325-X51U_8Bit@BGA153	Embedded MultiMediaCard (eMMC) with 8GB storage capacity, S325 series, X51U package	0.80
 EMMC16G-W525-X01U_8Bit@BGA153	16GB eMMC Flash Memory Module	0.80
 EMMC16G-S525-X51U_8Bit@BGA153	eMMC 5.1 16GB Flash Memory IC	0.90
-EMMC32G-W525-X01U_8Bit@BGA153	32GB eMMC Flash Memory IC, Kingston I-Temp •MMC™ compliant, with industrial temperature range	0.90
+EMMC32G-W525-X01U_8Bit@BGA153	32GB eMMC Flash Memory IC, Kingston I-Temp MMC™ compliant, with industrial temperature range	0.90
 EMMC32G-S525-X51U_8Bit@BGA153	32GB eMMC Flash Memory IC compliant with JEDEC eMMC 5.1 standard	0.90
-EMMC64G-W525-X01U_8Bit@BGA153	64GB eMMC Flash Memory with e•MMCTM 5.0 Interface	0.90
+EMMC64G-W525-X01U_8Bit@BGA153	64GB eMMC Flash Memory with eMMCTM 5.0 Interface	0.90
 EMMC128G-M522-B34U_8Bit@BGA153	128 GB eMMC Flash Memory IC	0.90
 EMMC04G-S627-X01U_4Bit@BGA153	4GB eMMC Flash Memory IC	0.90
 EMMC04G-M627-X01U_4Bit@BGA153	Kingston eMMC™ Flash memory, 4GB capacity	0.80
@@ -16874,8 +16874,8 @@ GAL22V10D	High-performance, 10-macrocell Complex Programmable Logic Device (CPLD
 GAL22V10D@SOIC24	High-performance, 10-macrocell Complex Programmable Logic Device (CPLD) with Electrically Erasable (E2) floating gate technology	0.90
 GAL22V10B	High-performance, 10-macrocell Complex Programmable Logic Device (CPLD) with Electrically Erasable (E2) floating gate technology	0.90
 GAL22V10B@SOIC24	High-performance, 10-macrocell Complex Programmable Logic Device (CPLD) with Electrically Erasable (E2) floating gate technology	0.90
-LG28C010@DIP32	128KB Electrically Erasable and Programmable Read‐Only Memory (EEPROM)	1.00
-LG28C010@PLCC32	128KB Electrically Erasable and Programmable Read‐Only Memory (EEPROM)	1.00
+LG28C010@DIP32	128KB Electrically Erasable and Programmable ReadOnly Memory (EEPROM)	1.00
+LG28C010@PLCC32	128KB Electrically Erasable and Programmable ReadOnly Memory (EEPROM)	1.00
 LG28C020@DIP32	256KB Parallel EEPROM	0.80
 LG28C020@PLCC32	256KB Parallel EEPROM	0.80
 LG28C040@DIP32	512KB Paged Parallel EEPROM	0.80
@@ -16986,18 +16986,18 @@ KH25L3236F(OTP)@SOP8	32M-bit Serial Flash Memory	0.90
 KH25L3236F(OTP)@USON8	32M-bit Serial Flash Memory	0.90
 KH25L3236F(OTP)@WSON8	32M-bit Serial Flash Memory	0.90
 KH25L3236F(OTP)@SOP16	32M-bit Serial Flash Memory	0.90
-MX25L3235E@SOP8	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory容量	0.90
-MX25L3235E@WSON8	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory容量	0.90
-MX25L3235E@SOP16	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory容量	0.90
-MX25L3235E(OTP)@SOP8	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory容量	0.90
-MX25L3235E(OTP)@WSON8	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory容量	0.90
-MX25L3235E(OTP)@SOP16	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory容量	0.90
-MX25L3235D@SOP8	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory容量	0.90
-MX25L3235D@WSON8	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory容量	0.90
-MX25L3235D@SOP16	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory容量	0.90
-MX25L3235D(OTP)@SOP8	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory容量	0.90
-MX25L3235D(OTP)@WSON8	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory容量	0.90
-MX25L3235D(OTP)@SOP16	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory容量	0.90
+MX25L3235E@SOP8	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory	0.90
+MX25L3235E@WSON8	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory	0.90
+MX25L3235E@SOP16	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory	0.90
+MX25L3235E(OTP)@SOP8	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory	0.90
+MX25L3235E(OTP)@WSON8	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory	0.90
+MX25L3235E(OTP)@SOP16	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory	0.90
+MX25L3235D@SOP8	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory	0.90
+MX25L3235D@WSON8	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory	0.90
+MX25L3235D@SOP16	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory	0.90
+MX25L3235D(OTP)@SOP8	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory	0.90
+MX25L3235D(OTP)@WSON8	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory	0.90
+MX25L3235D(OTP)@SOP16	SPI NOR Flash Memory IC with 32Mbit (4MB) of memory	0.90
 MX25L3236E@SOP8	32M-bit Serial Flash Memory with Data Protection Features	0.90
 MX25L3236E@USON8	32M-bit Serial Flash Memory with Data Protection Features	0.90
 MX25L3236E@WSON8	32M-bit Serial Flash Memory with Data Protection Features	0.90
@@ -18297,17 +18297,17 @@ MX30UF4G16AB@BGA63	4Gb SLC NAND Flash Memory Device	0.90
 MX30UF4G16AC@BGA63	4Gb SLC NAND Flash Memory Device	0.90
 MX30UF4G26AB@BGA63	4G-bit SLC NAND Flash Memory	0.90
 MX30UF4G26AC@BGA63	4G-bit SLC NAND Flash Memory	0.90
-MX52LM02B11_8Bit@BGA153	512MB e•MMC with 8-bit Data Bus	0.90
+MX52LM02B11_8Bit@BGA153	512MB eMMC with 8-bit Data Bus	0.90
 MX52LM02B12_8Bit@BGA153	512MB x 8 Parallel eMMC Flash Memory	0.90
 MX52LM04A11_8Bit@BGA153	32GB eMMC Memory IC	0.90
 MX52LM08A11_8Bit@BGA153	8GB eMMC Memory IC	0.90
-MX52LM02B11_4Bit@BGA153	512MB eMMC (e•MMCTM Version 5.1 compatible)	0.90
+MX52LM02B11_4Bit@BGA153	512MB eMMC (eMMCTM Version 5.1 compatible)	0.90
 MX52LM02B12_4Bit@BGA153	eMMC Memory Device with 512MB Capacity	0.90
 MX52LM04A11_4Bit@BGA153	32Gbit eMMC Memory IC (Version of MX52LM04A11XSI)	0.90
 MX52LM08A11_4Bit@BGA153	32GB eMMC Memory IC	0.90
-MX52LM02B11_1Bit@BGA153	512MB e•MMC™ Memory Chip	0.90
+MX52LM02B11_1Bit@BGA153	512MB eMMC™ Memory Chip	0.90
 MX52LM02B12_1Bit@BGA153	eMMC Memory Device with Specific Timing and Driver Options	0.90
-MX52LM04A11_1Bit@BGA153	32Gbit eMMC Memory IC, JEDEC e•MMC™ 5.1 standard compliant	0.90
+MX52LM04A11_1Bit@BGA153	32Gbit eMMC Memory IC, JEDEC eMMC™ 5.1 standard compliant	0.90
 MX52LM08A11_1Bit@BGA153	64GBIT eMMC_5.1 Memory IC	0.90
 MX52LM02B11(ISP)_4Bit	512MB eMMC Flash Memory	0.90
 MX52LM02B12(ISP)_4Bit	eMMC Memory with Driver Types for Dual Data Rate Support	0.80
@@ -20943,7 +20943,7 @@ MT25QL512AB@SOIC16	2Gb (256MB) Serial NOR Flash Memory	0.90
 MT25QL512AB(OTP)@SOIC8	2Gb (256MB) Serial NOR Flash Memory	0.90
 MT25QL512AB(OTP)@SOIC16	2Gb (256MB) Serial NOR Flash Memory	0.90
 MT25QL01GBBB(RW256)@WSON8	Micron Serial NOR Flash Memory 3V, Multiple I/O, 64KB Sector Erase	0.90
-MT25QL01GBBB(RW182)@SOIC16	Serial NOR Flash Memory, 128MB (1Gbit)容量，Quad I/O接口	0.90
+MT25QL01GBBB(RW182)@SOIC16	Serial NOR Flash Memory, 128MB (1Gbit)Quad I/O	0.90
 MT25QL01GBBB(RY148)@SOIC16	Micron Serial NOR Flash Memory 3V, Multiple I/O, 4KB, 32KB, 64KB Sector Erase	0.90
 MT25QL01GBBB(RW218)@SOIC16	Micron Serial NOR Flash Memory 3V, Multiple I/O, with 4KB, 32KB, 64KB sector erase capabilities	0.90
 MT25QL01GBBB(RW325)@SOIC16	Micron Serial NOR Flash Memory 3V, Multiple I/O, 4KB, 32KB, 64KB Sector Erase	0.90
@@ -21662,7 +21662,7 @@ NAND08GAH0J__4Bit@BGA153	Embedded Flash Memory Storage Solution with eMMC Interf
 NAND08GAH0N__4Bit@BGA169	256 Mbytes and 1 Gbyte eMMC NAND Flash Memory	0.90
 MTFC2GMVEA-OM__4Bit@BGA153	Micron e·MMC Memory IC with 512MB Code Memory and 32B Data Memory	0.80
 JW896__4Bit@BGA153	Micron e·MMC Storage Device, 512B Code Memory, 32B Data Memory	0.80
-MTFC2GMDEA-OM__4Bit@BGA153	Micron e·MMC Memory Card, 16GB容量	0.90
+MTFC2GMDEA-OM__4Bit@BGA153	Micron e·MMC Memory Card, 16GB	0.90
 JW999__4Bit@BGA153	Micron e·MMC Memory IC with 16GB capacity, FBGA-153 package	0.80
 MTFC2GMTEA__4Bit@BGA153	2GB eMMC Flash Memory IC	0.90
 JW724__4Bit@BGA153	16GBIT eMMC Flash Memory	0.90
@@ -21690,7 +21690,7 @@ MTFC4GMVEA-1M__4Bit@BGA153	32Gbit (4GB) eMMC NAND Flash Memory Device	0.90
 JWA50__4Bit@BGA153	eMMC Memory Chip with Specific Code (MTFC4GMCAM-1M WT)	0.90
 MTFC4GMCAM-1M__4Bit@BGA153	32Gbit e·MMC Memory Device with MMC Interface	0.90
 JW857__4Bit@BGA153	Micron eMMC Storage Device	0.90
-MTFC4GMVEA-4M__4Bit@BGA153	32Gbit e•MMC™ Flash Memory Device	0.90
+MTFC4GMVEA-4M__4Bit@BGA153	32Gbit eMMC™ Flash Memory Device	0.90
 JW822__4Bit@BGA153	eMMC Flash Memory, specifically Micron's JW822 [WFBGA153] variant with 512B code memory and 32B data memory	0.90
 JW823__4Bit@BGA153	Micron eMMC 5.1 Storage Device, JEDEC/MMC standard version 4.51-compliant	0.80
 MTFC4GMTEA-1F__4Bit@BGA153	32Gbit eMMC Memory Device with 153-WFBGA Package	0.90
@@ -21768,7 +21768,7 @@ NAND32GAH0P__4Bit@BGA169	32K x 8 Parallel EEPROM	0.70
 NAND32GAH0K__4Bit@BGA169	Micron eMMC NAND Flash Memory Device with 32GB Capacity	0.80
 NAND32GAH0H__4Bit@BGA169	4-Gbyte NAND Flash Memory with MultiMediaCard Interface	0.90
 MTFC8GLTEA-1F__4Bit@BGA153	64 Gbit (8 GB) Non-Volatile NAND Flash Memory IC in an eMMC Format with a 153-WFBGA Package	0.90
-JW814__4Bit@BGA153	Micron e·MMC Flash Memory, 8GB容量, WFBGA153封装	0.90
+JW814__4Bit@BGA153	Micron e·MMC Flash Memory, 8GB, WFBGA153	0.90
 JW815__4Bit@BGA153	Micron e·MMC (WFBGA153) with specific code and data memory sizes	0.80
 MTFC8GLVEA-OM__4Bit@BGA153	64GB e·MMC Flash Memory Device	0.90
 MTFC8GLVEA-1M__4Bit@BGA153	1MB Code Memory and 32B Data Memory eMMC Device	0.80
@@ -21846,7 +21846,7 @@ MTFC4GMVEA-1M__1Bit@BGA153	32Gbit eMMC Memory IC with MMC Interface, 4G x 8 Orga
 JWA50__1Bit@BGA153	4GB eMMC Memory IC	0.90
 MTFC4GMCAM-1M__1Bit@BGA153	32Gbit eMMC NAND Flash Memory Device	0.90
 JW857__1Bit@BGA153	eMMC Storage IC with 512B Code Memory and 32B Data Memory	0.90
-MTFC4GMVEA-4M__1Bit@BGA153	32Gbit e•MMC™ NAND Memory IC in 153-WFBGA Package	0.90
+MTFC4GMVEA-4M__1Bit@BGA153	32Gbit eMMC™ NAND Memory IC in 153-WFBGA Package	0.90
 JW822__1Bit@BGA153	eMMC Flash Memory Device	0.90
 JW823__1Bit@BGA153	eMMC (eXternal Memory Module) with WFBGA153 package, 512B code memory and 32B data memory	0.80
 MTFC4GMTEA-1F__1Bit@BGA153	32Gbit eMMC Memory Device	0.90
@@ -21869,7 +21869,7 @@ MTFC4GMVEA__1Bit@BGA153	32GB eMMC Memory IC	0.90
 JW777__1Bit@BGA153	eMMC Flash Memory Device (Micron, 512B Code Memory, 32B Data Memory)	0.90
 JW775__1Bit@BGA153	Micron e.MMC 5.1 compliant WFBGA153 storage device	0.90
 JY775__1Bit@BGA153	eMMC Device (Micron, WFBGA153 package)	0.90
-MTFC4GMTEA__1Bit@BGA153	32Gbit eMMC Memory Device in Micron's e•MMC Series, 153-WFBGA Package	0.90
+MTFC4GMTEA__1Bit@BGA153	32Gbit eMMC Memory Device in Micron's eMMC Series, 153-WFBGA Package	0.90
 NQ416__1Bit@BGA153	Micron Memory IC with WFBGA153 Package	0.90
 JW729__1Bit@BGA153	eMMC Memory Chip with 4GB Capacity	0.90
 MTFC4GMWDM-3M__1Bit@BGA153	32GB eMMC Flash Memory IC (Micron MTFC4GMWDM-3M-AIT-A)	0.90
@@ -21902,7 +21902,7 @@ JY450__1Bit@BGA153	eMMC Memory Chip with 4GB Capacity, Manufacturer Micron	0.90
 MTFC4GMCDM-1M__1Bit@BGA153	4GB eMMC Flash Memory IC	0.90
 JW963__1Bit@BGA153	4GB e-MMC Memory Chip	0.90
 JW964__1Bit@BGA153	Micron eMMC Flash Memory Device with TFBGA153 Package	0.90
-MTFC4GACAEAM-1M__1Bit@BGA153	High-capacity NAND flash memory within Micron's e•MMC series	0.90
+MTFC4GACAEAM-1M__1Bit@BGA153	High-capacity NAND flash memory within Micron's eMMC series	0.90
 JWA80__1Bit@BGA153	16GB e-MMC Memory Chip	0.90
 JWA81__1Bit@BGA153	eMMC Flash Memory Chip	0.90
 MTFC4GACAECN-1M__1Bit@BGA153	32Gbit eMMC Flash Memory IC	0.90
@@ -22087,7 +22087,7 @@ HBBSO_(ISP)_4Bit	eMMC flash memory controller with ISP, Micron part number	0.70
 MTFC4GMCDM-1M_(ISP)_4Bit	4GB eMMC Memory Chip	0.90
 JW963_(ISP)_4Bit	Memory Chip IC (4GB e-MMC)	0.90
 JW964_(ISP)_4Bit	eMMC In-System Programming Interface for SP7350 Platform	0.90
-MTFC4GACAEAM-1M_(ISP)_4Bit	High-capacity NAND flash within Micron's e•MMC series, 32 Gbit capacity, suitable for designs requiring MMC connectivity and operation across standard 3.0 V power rails	0.90
+MTFC4GACAEAM-1M_(ISP)_4Bit	High-capacity NAND flash within Micron's eMMC series, 32 Gbit capacity, suitable for designs requiring MMC connectivity and operation across standard 3.0 V power rails	0.90
 JWA80_(ISP)_4Bit	eMMC flash memory controller with ISP, Micron part number	0.70
 JWA81_(ISP)_4Bit	UFS, eMMC, and ISP Android Nand Chip Programmer	0.80
 MTFC4GACAECN-1M_(ISP)_4Bit	Micron eMMC Memory Card, 32GB Capacity	0.90
@@ -22130,7 +22130,7 @@ MTFC8GLVEA-1M_(ISP)_4Bit	64Gbit NAND Flash Memory Device with MMC Interface	0.90
 JW858_(ISP)_4Bit	ISP (In-System Programmable) Memory IC with 32B Data Memory and 512B Code Memory	0.80
 D9TYY_(ISP)_4Bit	ISP (In-system Programming) Controller for eMMC	0.80
 MTFC8GACAENS_(ISP)_4Bit	64Gbit eMMC Flash Memory	0.90
-MTFC8GLMDM-3M_(ISP)_4Bit	Micron e·MMC Flash Memory IC with 8GB容量,符合e·MMC规范3.0版本，具有ISP功能。	0.80
+MTFC8GLMDM-3M_(ISP)_4Bit	Micron e·MMC Flash Memory IC with 8GB,e·MMC3.0ISP	0.80
 JY436_(ISP)_4Bit	Micron's 512B Code Memory and 32B Data Memory eMMC Chip	0.80
 MTFC8GLMDM-3L_(ISP)_4Bit	eMMC ISP (Input/Output Pad) Controller for Micron's 512B Code Memory and 32B Data Memory	0.70
 SJJHL_(ISP)_4Bit	UFS and eMMC Programmer IC with ISP Support	0.90
@@ -22393,7 +22393,7 @@ JW430__8Bit@BGA100	8-bit microcontroller or memory controller	0.50
 JY417__8Bit@BGA100	Memory IC with eMMC functionality, 512B code memory and 32B data memory	0.80
 MTFC4GLGDQ__8Bit@BGA100	Micron eMMC Flash Memory Device with 512B Code Memory and 32B Data Memory	0.80
 MTFC4GLGDQ-AIT__8Bit@BGA100	32Gbit eMMC Memory IC from Micron Technology Inc	0.90
-JY444__8Bit@BGA100	Memory Chip (eMMC), 4GB容量, 100-Pin FBGA封装	0.90
+JY444__8Bit@BGA100	Memory Chip (eMMC), 4GB, 100-Pin FBGA	0.90
 JY441__8Bit@BGA100	8-bit microcontroller or memory controller	0.50
 JWA37__8Bit@BGA100	Micron FBGA100 Flash Memory Device	0.90
 MTFC4GLDDQ-4M__8Bit@BGA100	Micron e·MMC with 512B code memory and 32B data memory	0.80
@@ -22427,8 +22427,8 @@ JW310__4Bit@BGA100	Memory IC with 512B code memory and 32B data memory	0.60
 JY310__4Bit@BGA100	Micron Memory IC (Specific model and details not fully provided)	0.80
 N2M400EDA311A3B__4Bit@BGA100	Micron e·MMC storage device with specific package and specifications	0.80
 N2M400EDA311A3B__4Bit@BGA100	Micron e·MMC storage device with specific package and specifications	0.80
-NAND16GAHAP__4Bit@BGA100	NAND Flash Memory IC, 16GB容量	0.80
-NAND16GAHAP__4Bit@BGA100	NAND Flash Memory IC, 16GB容量	0.80
+NAND16GAHAP__4Bit@BGA100	NAND Flash Memory IC, 16GB	0.80
+NAND16GAHAP__4Bit@BGA100	NAND Flash Memory IC, 16GB	0.80
 MTFC4GDKDQ__4Bit@BGA100	Micron e·MMC Storage Device with 4GB Capacity	0.80
 JW315__4Bit@BGA100	4-bit microcontroller or memory controller	0.50
 JY315__4Bit@BGA100	4-bit microcontroller or memory controller	0.50
@@ -22448,7 +22448,7 @@ MTFC4GLDDQ-4M__4Bit@BGA100	32Gbit eMMC Flash Memory IC	0.90
 JWA12__4Bit@BGA100	Micron eMMC Memory IC with 512B code memory and 32B data memory	0.80
 MTFC4GMWDQ-3M__4Bit@BGA100	32GB eMMC Memory Device (Micron MTFC4GMWDQ-3M-AIT-A)	0.90
 MTFC4GMWDQ-AIT__4Bit@BGA100	32GB eMMC Memory Device	0.90
-HBBSO__4Bit@BGA100	BGA封装的eMMC芯片，具体型号为MTFC4GMWDQ-3M	0.90
+HBBSO__4Bit@BGA100	BGAeMMCMTFC4GMWDQ-3M	0.90
 JWC41__4Bit@BGA100	eMMC v4.41 Memory Card Standard	0.80
 MTFC4GACAANA-4M__4Bit@BGA100	32GB eMMC Flash Memory IC	0.90
 JWB16__4Bit@BGA100	Memory Chip, eMMC (Micron MTFC4GACAANA-4M-IT)	0.90
@@ -22495,7 +22495,7 @@ JWA37__1Bit@BGA100	Micron eMMC Flash Memory Device (FBGA100 package)	0.90
 MTFC4GLDDQ-4M__1Bit@BGA100	32 Gigabit eMMC™ Embedded Flash Memory IC	0.90
 JWA12__1Bit@BGA100	Micron e·MMC Device [LBGA100] with 512B Code Memory and 32B Data Memory	0.80
 MTFC4GMWDQ-3M__1Bit@BGA100	32GB eMMC Flash Memory	0.90
-MTFC4GMWDQ-AIT__1Bit@BGA100	Micron Technology Inc. e•MMC™ MTFC4GMWDQ-AIT 32Gbit NAND Flash Memory Device	0.90
+MTFC4GMWDQ-AIT__1Bit@BGA100	Micron Technology Inc. eMMC™ MTFC4GMWDQ-AIT 32Gbit NAND Flash Memory Device	0.90
 HBBSO__1Bit@BGA100	BGA Mounting Type eMMC Chip	0.90
 JWC41__1Bit@BGA100	Micron e.MMC 5.1 Storage Device with Specific Memory Sizes	0.60
 MTFC4GACAANA-4M__1Bit@BGA100	eMMC Memory IC, 32Gbit (4GB) NAND Flash	0.90
@@ -22799,7 +22799,7 @@ N2M400GDA321A3B_(ISP)_4Bit	eMMC Interface Device with 32KB Code Memory and 512B 
 N2M400GDA321A30_(ISP)_4Bit	eMMC ISP Adapter for Micron N2M400GDA321A30 Flash Memory Device	0.80
 NAND64GAH0K_(ISP)_4Bit	Micron NAND Flash Memory IC, 64GB Capacity [TFBGA169 Package], with ISP (In-System Programming) capability	0.80
 NAND64GAH0H_(ISP)_4Bit	4-Gbyte NAND flash memory with MultiMediaCard interface	0.90
-NAND64GAH0P_(ISP)_4Bit	NAND Flash Memory IC, 64GB容量，支持ISP（In-System Programming）功能，适用于eMMC存储解决方案。	0.80
+NAND64GAH0P_(ISP)_4Bit	NAND Flash Memory IC, 64GBISPIn-System ProgrammingeMMC	0.80
 MTFC16GLMDM-4M_(ISP)_4Bit	A Micron e·MMC memory chip with specific parameters, including 512B code memory and 32B data memory	0.80
 HBBSY_(ISP)_4Bit	ISP (In-System Programming) Controller for EMMC	0.80
 MTFC16GLWDQ-4M_(ISP)_4Bit	Micron eMMC (MLC) Memory with 128GB Capacity	0.90
@@ -23286,7 +23286,7 @@ JWB75__8Bit@BGA153	8 GB eMMC Storage Device	0.90
 MTFC16GAKAECN-4M__8Bit@BGA153	128GB eMMC Flash Memory IC	0.90
 JWB76__8Bit@BGA153	Micron e.MMC 5.1 Storage Device	0.80
 JWB77__8Bit@BGA153	eMMC (eMIPI Card) Storage Device with 8 GB Capacity	0.90
-NAND128GAH0K__8Bit@BGA169	NAND Flash Memory IC, 128 GB容量, 8-bit数据接口	0.80
+NAND128GAH0K__8Bit@BGA169	NAND Flash Memory IC, 128 GB, 8-bit	0.80
 MTFC32GAPALBH-AIT__8Bit@BGA153	256 Gigabits eMMC Flash Memory IC	0.80
 JWC61__8Bit@BGA153	Micron e.MMC 5.1 storage device, specifically the JWC61 [TFBGA153] variant	0.80
 MTFC32GJWEF-4M__8Bit@BGA169	256GB eMMC NAND Flash Memory IC	0.90
@@ -23472,7 +23472,7 @@ JW774__4Bit@BGA169	eMMC 5.1 Storage Device, Micron Part Number JW774	0.90
 MTFC32GKQDN__4Bit@BGA169	Micron 32GB eMMC flash memory, 4-bit interface	0.80
 MTFC32GKLDN__4Bit@BGA169	32GB eMMC Flash Memory IC	0.80
 MTFC32GJUEF__4Bit@BGA169	256 Gbit eMMC Flash Memory IC	0.90
-JW874__4Bit@BGA169	Micron e·MMC Memory IC with 32GB容量	0.80
+JW874__4Bit@BGA169	Micron e·MMC Memory IC with 32GB	0.80
 MTFC32GJGEF__4Bit@BGA169	Micron eMMC Flash Memory IC with 256Gbit (32GB) storage, housed in a 169-TFBGA package	0.80
 JY460__4Bit@BGA169	Micron e·MMC Memory Device, 4 GB Capacity	0.90
 MTFC32GAKAECN__4Bit@BGA153	256GB eMMC Memory Chip	0.90
@@ -23534,7 +23534,7 @@ JWC06__1Bit@BGA153	Micron eMMC Device with VFBGA153 Package	0.90
 JWC07__1Bit@BGA153	Micron eMMC [VFBGA153] with 512B code memory and 32B data memory	0.80
 MTFC8GAKAJCN-1M__1Bit@BGA153	64Gb eMMC Memory IC (Micron MTFC8GAKAJCN-1M WT)	0.90
 JY996__1Bit@BGA153	Micron eMMC [VFBGA153] storage device, part number JY996	0.80
-JY995__1Bit@BGA153	Memory Chip IC for eMMC, 8GB容量，VFBGA153封装	0.90
+JY995__1Bit@BGA153	Memory Chip IC for eMMC, 8GBVFBGA153	0.90
 MTFC8GAKAJCN-4M__1Bit@BGA153	64GB eMMC Flash Memory IC	0.90
 JY997__1Bit@BGA153	Micron VFBGA153 eMMC Controller	0.90
 JY998__1Bit@BGA153	eMMC flash memory controller, 1-bit interface	0.50
@@ -24184,7 +24184,7 @@ NAND128AHOK__1Bit@BGA169	128GB eMMC Flash Memory Chip	0.90
 NAND256AHOK__1Bit@BGA169	Memory Controller for eMMC, 256 KB Code + 32 B Data Flash Memory	0.50
 NAND02GAHOI_(ISP)_4Bit	IC for UFS, eMMC, and ISP Nand repair; supports reading and writing operations	0.60
 NAND02GAHOL_(ISP)_4Bit	2GB NAND Flash with ISP capability, 4-bit interface	0.70
-NAND08GAHOB_(ISP)_4Bit	NAND Flash Memory IC with SPI Interface, 1 GB容量	0.80
+NAND08GAHOB_(ISP)_4Bit	NAND Flash Memory IC with SPI Interface, 1 GB	0.80
 NAND08GAHOA_(ISP)_4Bit	8GB NAND Flash with ISP capability, 4-bit interface	0.70
 NAND08GAHOF_(ISP)_4Bit	NAND Flash Memory IC with specific parameters for Micron e·MMC	0.80
 NAND08GAHOJ_(ISP)_4Bit	8GB NAND Flash with ISP capability, 4-bit interface	0.70
@@ -25946,7 +25946,7 @@ KFH4G16U2A-DEB@BGA63	NAND Flash Memory with 33MB Code Memory	0.80
 KFH8G16U2M-DEB@BGA63	8Gbit NAND Flash memory	0.70
 KFH8GH6U4M-DEB@BGA63	NAND Flash Memory with 33MB of Code Memory	0.80
 KFH8G16D2M-DEB@BGA63	NAND Flash Memory with 33MB Code Memory, manufactured by Samsung	0.80
-KFH8GH6D4M-DEB@BGA63	NAND Flash Memory, 33MB容量，制造商：三星	0.90
+KFH8GH6D4M-DEB@BGA63	NAND Flash Memory, 33MB	0.90
 KFH8G16Q2M-DEB@BGA63	16 Gbit (2GB) NAND Flash IC	0.90
 KFH8GH6Q4M-DEB@BGA63	8Gbit NAND Flash memory	0.70
 KFHAG16U4M-DEB@BGA63	A type of low-power NAND Flash memory using ferroelectric field-effect transistors	0.60
@@ -26453,7 +26453,7 @@ SDIN4D2-2G_8Bit@BGA153	Sandisk iNAND Industrial Embedded Flash Drive with 2GB Ca
 SDIN5C2-4G_8Bit@BGA169	4GB eMMC Flash Memory	0.90
 SDIN5D2-4G_8Bit@BGA153	eMMC Flash Memory Controller with 4GB Storage Capacity	0.80
 SDIN5D2-4G-L_8Bit@BGA153	Flash Memory Drive Controller for Mobile Multimedia Applications	0.80
-SDIN5D1-4G-L_8Bit@BGA153	SD Memory Card Interface IC for eMMC, 4GB容量	0.80
+SDIN5D1-4G-L_8Bit@BGA153	SD Memory Card Interface IC for eMMC, 4GB	0.80
 SDIN4C2-4G_8Bit@BGA169	SanDisk 4GB SLC eMMC Internal Solid State Drive (SSD)	0.90
 SDIN4C2-4G-U_8Bit@BGA169	4GB SLC eMMC Internal Solid State Drive (SSD)	0.80
 SDIN5C1-4G_8Bit@BGA169	8GB eMMC Memory IC from SanDisk	0.90
@@ -26648,7 +26648,7 @@ SDIN5D2-4G-L(ISP)_4Bit	High-capacity flash memory IC for mobile multimedia appli
 SDIN5D1-4G-L(ISP)_4Bit	SD Card with iNAND Technology, 4GB Capacity	0.80
 SDIN4C2-4G(ISP)_4Bit	SanDisk 4GB SLC eMMC Internal Solid State Drive (SSD)	0.90
 SDIN4C2-4G-U(ISP)_4Bit	eMMC Memory Card with 4G Storage Capacity	0.80
-SDIN5C1-4G(ISP)_4Bit	SanDisk eMMC Flash Memory, 4GB容量	0.90
+SDIN5C1-4G(ISP)_4Bit	SanDisk eMMC Flash Memory, 4GB	0.90
 SDIN7DP2-4G(ISP)_4Bit	4Gb (512MB) eMMC Flash Memory IC	0.80
 SDIN8DE2-4G(ISP)_4Bit	SanDisk eMMC Flash Memory Chip (4GB capacity)	0.90
 SDIN5C2-8G(ISP)_4Bit	eMMC (Embedded MultiMediaCard) with 8GB storage capacity	0.90
@@ -26722,7 +26722,7 @@ SDIN5D2-8G(ISP)_1Bit	Sandisk's iNAND Industrial Flash Drive, 8GB capacity	0.90
 SDIN5D2-8G-L(ISP)_1Bit	SanDisk eMMC Flash Memory Device (8GB)	0.90
 SDIN5D1-8G-L(ISP)_1Bit	eMMC Flash Memory Card	0.90
 SDIN4C2-8(ISP)_1Bit	Secure Digital Input/Output Memory Module (eMMC)	0.90
-SDIN4C2-8G-U(ISP)_1Bit	eMMC Memory Chip with 8GB容量, ISP版本	0.90
+SDIN4C2-8G-U(ISP)_1Bit	eMMC Memory Chip with 8GB, ISP	0.90
 SDIN7DU2-8G(ISP)_1Bit	SanDisk eMMC Flash Memory IC with 8GB storage capacity	0.90
 SDIN7DP2-8G(ISP)_1Bit	8GB eMMC Flash Memory Module for Automotive Applications	0.90
 SDIN8DE2-8G(ISP)_1Bit	SanDisk eMMC 8GB Memory Chip ( Likely for Industrial/Embedded Use )	0.90
@@ -27865,13 +27865,13 @@ S35ML02G300BHI00(x4)@BGA24	2Gb SkyHigh Memory NAND Flash with 0BIT ECC, x4 I/O, 
 S35ML02G300BHV00(x4)@BGA24	SkyHigh Memory S35ML02G300WHI00 Quad 8KB NAND Flash	0.90
 S35ML02G300WHI00(x1+ISP)@WSON8	SkyHigh Memory NAND Flash with 2Gb capacity, 2KB page size, SPI interface supporting Mode 0 and Mode 3, X1, X2, X4 I/O configurations, and 3V VCC	0.90
 S35ML02G300WHV00(x1+ISP)@WSON8	SkyHigh Memory S35ML02G300WHI000 NAND Flash with 1-bit ECC, X1 mode	0.90
-S35ML02G300GHI00(x1+ISP)@SOP16	SkyHigh Memory NAND Flash, 2Gb (0B)容量，支持X1、X2、X4 I/O模式	0.90
-S35ML02G300GHV00(x1+ISP)@SOP16	SkyHigh Memory SLC NAND Flash, 2Gb (2GB)容量，X1接口，3V电源供应	0.90
+S35ML02G300GHI00(x1+ISP)@SOP16	SkyHigh Memory NAND Flash, 2Gb (0B)X1X2X4 I/O	0.90
+S35ML02G300GHV00(x1+ISP)@SOP16	SkyHigh Memory SLC NAND Flash, 2Gb (2GB)X13V	0.90
 S35ML02G300BHI00(x1+ISP)@BGA24	SkyHigh Memory NAND Flash with 2GB Capacity, 2KB Page Size, X1 Mode Operation	0.90
 S35ML02G300BHV00(x1+ISP)@BGA24	SkyHigh Memory SLC NAND Flash with 2GB Capacity, 2KB Page Size, X1 Mode Operation	0.90
 S35ML04G300WHI00(x4)@WSON8	32K x 8 SLC NAND Flash Memory	0.90
 S35ML04G300WHV00(x4)@WSON8	S35ML04G300WHV00(x4 is a 4-bit NAND Flash memory with Quad SPI support, manufactured by SkyHigh Memory. It operates at 3V VCC and supports 0BIT ECC, X1, X2, and X4 I/O	0.80
-S35ML04G300GHI00(x4)@SOP16	32K x 8 SLC NAND Flash with 0BIT ECC,支持X1 X2 X4 I/O模式，3V VCC供电，LGA封装，2KB页面大小。	0.90
+S35ML04G300GHI00(x4)@SOP16	32K x 8 SLC NAND Flash with 0BIT ECC,X1 X2 X4 I/O3V VCCLGA2KB	0.90
 S35ML04G300GHV00(x4)@SOP16	32K x 8 SLC NAND Flash Memory (Quad Mode)	0.90
 S35ML04G300BHI00(x4)@BGA24	SkyHigh Memory NAND Flash with 32MB capacity, 0BIT ECC, supporting X1, X2, and X4 I/O modes, operating at 3V VCC	0.90
 S35ML04G300BHV00(x4)@BGA24	SkyHigh Memory S35ML04G300BHV00 Quad 32K x 8 SLC NAND Flash IC with 0BIT ECC	0.90
@@ -28056,7 +28056,7 @@ S29JL032H60TFI21@TSOP48	NOR Flash Memory IC, 32Mbit (4MB x 8)	0.90
 S29JL032H70TAI21@TSOP48	32MB NOR Flash Memory	0.90
 S29JL032H70TFI21@TSOP48	32M Bit (32MB) CMOS Flash Memory	0.90
 S29JL032H90TAI21@TSOP48	32MB NOR Flash Memory	0.90
-S29JL032H90TFI21@TSOP48	NOR Flash Memory, 32MB容量	0.90
+S29JL032H90TFI21@TSOP48	NOR Flash Memory, 32MB	0.90
 S29JL032J60TFI21@TSOP48	32Mbit (4MB) NOR Flash Memory IC, organized as 2,097,152 words of 16 bits each or 4,194,304 bytes of 8 bits each. Can be programmed in-system with a standard 3.0V supply and also via EPROM programmers	0.90
 S29JL032J70TFI21@TSOP48	32-Mb Parallel NOR Flash Memory with 70 ns Access Time	0.90
 S29JL032H55TAI22@TSOP48	32M x 1 Bit CMOS Flash Memory	0.90
@@ -29185,7 +29185,7 @@ NAND32GAHOP_4Bit@BGA169	32Gb NAND Flash Memory with 4-bit ECC interface	0.70
 NAND32GAHOK_4Bit@BGA169	32Gb NAND Flash Memory with 4-bit ECC interface	0.70
 NAND32GAHOH_4Bit@BGA169	32Gb NAND Flash Memory with 4-bit ECC interface	0.70
 NAND64GAHOK_4Bit@BGA169	64GB eMMC Flash Memory Device	0.90
-NAND64GAHOH_4Bit@BGA169	NAND Flash Memory IC, 64GB容量	0.80
+NAND64GAHOH_4Bit@BGA169	NAND Flash Memory IC, 64GB	0.80
 NAND64GAHOP_4Bit@BGA169	64Gb NAND Flash Memory with 4-bit ECC interface	0.70
 NAND128AHOK_4Bit@BGA169	128GB eMMC Flash Memory Device	0.90
 NAND256AHOK_4Bit@BGA169	Memory Interface Controller for eMMC, possibly related to Micron's part number but with different specifications (256MB instead of 512B)	0.70
@@ -30251,7 +30251,7 @@ THGBMBG6D1KBAIL(ISP)_1Bit	8GB e-MMC 5.0 Flash Memory	0.90
 THGBMFG6C1LBAIL(ISP)_1Bit	8GB eMMC Module (Interface Version 5.1)	0.90
 THGBMHG6C1LBAIL(ISP)_1Bit	eMMC Flash Memory IC, 64Gbit (8GB) capacity, manufactured by Kioxia	0.90
 THGBMHG6C1LBAU6(ISP)_1Bit	64Gbit (8GB) eMMC Memory IC	0.90
-THGBMHG6C1LBAAL(ISP)_1Bit	TOSHIBA/KIOXIA eMMC Module - 64Gbit (8GB)容量, 52 MHz频率, 11.5x13mm封装	0.90
+THGBMHG6C1LBAAL(ISP)_1Bit	TOSHIBA/KIOXIA eMMC Module - 64Gbit (8GB), 52 MHz, 11.5x13mm	0.90
 THGBMHG6C1LBAW6(ISP)_1Bit	64Gbit eMMC Memory IC with 153-WFBGA Package	0.90
 THGBMHG6C1LBAWL(ISP)_1Bit	64Gbit eMMC Flash Memory IC	0.90
 THGBMJG6C1LBAIL(ISP)_1Bit	64Gbit eMMC Memory IC with JEDEC / MMCA Version 5.1 Interface	0.90
