@@ -11,7 +11,7 @@ from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
-from textual.widgets import Footer, Header, Static
+from textual.widgets import Footer, Header, Static, TabbedContent, TabPane
 
 from minigecko import __version__
 from minigecko.ui.hexdump import _MAX_BYTES
@@ -97,15 +97,19 @@ class MinigeckoApp(App):
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         yield Toolbar()
-        with Horizontal(id="body"):
-            panel = HexPanel()
-            panel.styles.width = self._state["hex_panel_width"]
-            yield panel
-            yield ResizeHandle()
-            with Vertical(id="right-panel"):
-                yield ICInfoPanel()
-                yield VResizeHandle()
-                yield ActionLogPanel()
+        with TabbedContent(id="main-tabs"):
+            with TabPane("Programmer", id="tab-programmer"):
+                with Horizontal(id="body"):
+                    panel = HexPanel()
+                    panel.styles.width = self._state["hex_panel_width"]
+                    yield panel
+                    yield ResizeHandle()
+                    with Vertical(id="right-panel"):
+                        yield ICInfoPanel()
+                        yield VResizeHandle()
+                        yield ActionLogPanel()
+            with TabPane("openCUPL", id="tab-cupl"):
+                yield Static("PLD editor — coming soon", id="cupl-stub")
         yield Footer()
 
     def on_mount(self) -> None:
