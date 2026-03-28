@@ -30,6 +30,9 @@ class MinigeckoApp(App):
     TITLE = f"minigecko v{__version__}"
 
     DEFAULT_CSS = """
+    #main-tabs { height: 1fr; }
+    #tab-programmer { height: 1fr; }
+    #body { height: 1fr; }
     #right-panel { width: 1fr; height: 1fr; }
     """
 
