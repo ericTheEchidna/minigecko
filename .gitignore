@@ -60,3 +60,4 @@ scripts/fix_descriptions.py
 minigecko/data/flagged_descriptions.txt
 minigecko/data/device_descriptions_fixes.txt
 minigecko/data/desc_words.txt
+minigecko.code-workspace
