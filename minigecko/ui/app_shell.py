@@ -16,6 +16,7 @@ from textual.widgets import Footer, Header, Static, TabbedContent, TabPane
 from minigecko import __version__
 from minigecko.ui.hexdump import _MAX_BYTES
 from minigecko.ui.modals import ChipSelectScreen, FilePickerScreen, HelpScreen, ICOpsScreen, infer_chip_type
+from minigecko.ui.modals.help_screen import is_manual_cached, load_manual_text
 from minigecko.ui.panels import ActionLogPanel, HexPanel, ICInfoPanel
 from minigecko.ui.state import _load_state, _save_state
 from minigecko.ui.toolbar import Toolbar
@@ -122,6 +123,7 @@ class MinigeckoApp(App):
         set_binary_path(self._state.get("minipro_path", ""))
         self._poll_programmer()
         self._preload_device_db()
+        self._preload_help_manual()
         self.query_one("#hex-log").focus()
 
     @work(thread=True)
@@ -160,6 +162,10 @@ class MinigeckoApp(App):
         self._log("[dim]Loading device database…[/]")
         db = get_db()
         self._log(f"[dim]{len(db):,} devices ready.[/]")
+
+    @work(thread=True)
+    def _preload_help_manual(self) -> None:
+        load_manual_text()
 
     def action_file(self) -> None:
         start = self.get_last_directory()
@@ -456,4 +462,6 @@ class MinigeckoApp(App):
         self.log_action("[dim]TOOLS  not implemented yet[/]")
 
     def action_help(self) -> None:
+        if not is_manual_cached():
+            self.log_action("[dim]HELP  loading user manual…[/]")
         self.push_screen(HelpScreen())

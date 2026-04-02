@@ -41,7 +41,7 @@ where = ["."]
 include = ["minigecko*"]
 
 [tool.setuptools.package-data]
-minigecko = ["py.typed", "data/*.txt", "data/*.md"]
+minigecko = ["py.typed", "data/*.txt", "data/*.md", "data/help/*.md"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
