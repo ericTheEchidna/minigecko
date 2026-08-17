@@ -11,6 +11,12 @@ Tests are split into two classes:
 
 import pytest
 
+from minigecko.core.identify import (
+    DIP_FAMILIES,
+    package_family,
+    parse_package,
+    socket_pins,
+)
 from minigecko.core.logicdb import find_logic_ic, list_logic_ics, logicic_xml_path
 from minigecko.core.minipro import MiniproResult
 
@@ -92,3 +98,61 @@ class TestLogicDB:
         assert ic.vector_count > 0
 
 
+# ---------------------------------------------------------------------------
+# Package parsing and socket pin resolution (identify)
+# ---------------------------------------------------------------------------
+
+class TestPackageParsing:
+    def test_plain_dip(self):
+        assert parse_package("DIP28") == ("DIP", 28)
+
+    def test_suffix_in_parens_is_ignored(self):
+        assert parse_package("TSOP32(ADP:Pin9to1)") == ("TSOP", 32)
+
+    def test_recommend_suffix_is_ignored(self):
+        assert parse_package("BGA100(recommend)") == ("BGA", 100)
+
+    def test_empty_package(self):
+        assert parse_package("") == (None, None)
+
+    def test_family_without_digits(self):
+        # "OC" appears as a package on two logic entries and carries no pin count
+        assert parse_package("OC") == (None, None)
+
+    def test_lowercase_family_is_normalised(self):
+        assert parse_package("dip8") == ("DIP", 8)
+
+    def test_dip_families_contains_dip(self):
+        assert "DIP" in DIP_FAMILIES
+
+
+class TestSocketPins:
+    def test_package_string_wins(self):
+        # pin_count is scrambled for BGA parts: 33 really means BGA48.
+        entry = {"package": "BGA48", "pin_count": 33}
+        assert socket_pins(entry) == 48
+
+    def test_plcc_package_string_wins(self):
+        entry = {"package": "PLCC32", "pin_count": 63}
+        assert socket_pins(entry) == 32
+
+    def test_falls_back_to_pin_count_when_package_empty(self):
+        # Logic IC entries from logicic.xml: empty package, reliable pin_count.
+        entry = {"package": "", "pin_count": 14}
+        assert socket_pins(entry) == 14
+
+    def test_returns_none_when_both_unusable(self):
+        assert socket_pins({"package": "", "pin_count": 0}) is None
+
+    def test_rejects_odd_pin_count_fallback(self):
+        # DIP pin counts are always even; an odd value is not a pin count.
+        assert socket_pins({"package": "", "pin_count": 33}) is None
+
+    def test_rejects_out_of_range_pin_count_fallback(self):
+        assert socket_pins({"package": "", "pin_count": 200}) is None
+
+    def test_package_family_empty_is_none(self):
+        assert package_family({"package": ""}) is None
+
+    def test_package_family_reads_package(self):
+        assert package_family({"package": "SOIC8"}) == "SOIC"
