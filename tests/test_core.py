@@ -182,6 +182,12 @@ class TestMarkingMatcher:
     def test_star_matches_run(self):
         assert marking_matches("27*256", ["27C256"]) is True
 
+    def test_wildcard_matches_within_a_prefixed_name(self):
+        assert marking_matches("74??00", ["SN74LS00"]) is True
+
+    def test_wildcard_matches_within_a_suffixed_name(self):
+        assert marking_matches("27*256", ["AM27C256@DIP28"]) is True
+
     def test_matches_any_of_several_names(self):
         assert marking_matches("2764", ["AM2764A", "MBM2764"]) is True
 

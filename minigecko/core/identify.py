@@ -53,8 +53,9 @@ def socket_pins(entry: dict) -> int | None:
 
     The package string is authoritative: the numeric ``pin_count`` field is
     scrambled for non-DIP parts (33 means BGA48, 34 means BGA63, 63 means
-    PLCC32).  ``pin_count`` is only consulted when the package string is
-    empty, which is the case for logicic.xml entries where it is reliable.
+    PLCC32).  ``pin_count`` is only consulted when the package string carries
+    no pin count, which is the case for logicic.xml entries where it is
+    reliable.
     """
     _, pins = parse_package(entry.get("package", ""))
     if pins is not None:
@@ -73,7 +74,9 @@ def marking_matches(marking: str, names: list[str]) -> bool:
     Syntax is shell-glob and case-insensitive: ``?`` matches one character,
     ``*`` matches any run.  A fragment with no wildcards is treated as a
     substring match, so "74LS" matches "SN74LS00" the way a user expects.
-    An empty or whitespace-only fragment matches everything.
+    Wildcard fragments match anywhere in the name too, so "74??00" matches
+    "SN74LS00" past the manufacturer prefix.  An empty or whitespace-only
+    fragment matches everything.
     """
     pattern = (marking or "").strip().upper()
     if not pattern:
@@ -81,5 +84,10 @@ def marking_matches(marking: str, names: list[str]) -> bool:
 
     if "*" not in pattern and "?" not in pattern:
         return any(pattern in (name or "").upper() for name in names)
+
+    if not pattern.startswith("*"):
+        pattern = "*" + pattern
+    if not pattern.endswith("*"):
+        pattern = pattern + "*"
 
     return any(fnmatch.fnmatchcase((name or "").upper(), pattern) for name in names)
