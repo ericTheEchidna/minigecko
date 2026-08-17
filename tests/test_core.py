@@ -668,6 +668,22 @@ class TestIdentifyTier1:
         carrier_cand = next(c for c in report.candidates if c.name == report.carrier)
         assert carrier_cand.confidence == "confirmed"
 
+    def test_matched_evidence_does_not_claim_a_read(self):
+        # A matched -D returns no ID string of its own, so the reported value is
+        # the carrier's catalogue ID and must not be worded as an observation.
+        probe = lambda carrier: {"chip_id": None, "expected_id": None, "matched": True}
+        report = identify(ChipHint(pin_count=28), probe=probe)
+        carrier_cand = next(c for c in report.candidates if c.name == report.carrier)
+        summary = carrier_cand.evidence_summary
+        assert "read via" not in summary
+        assert "silicon ID" not in summary
+        assert "catalogue ID" in summary
+
+    def test_mismatch_evidence_does_claim_a_read(self):
+        report = identify(ChipHint(pin_count=28), probe=self._shared_id_probe)
+        summary = report.candidates[0].evidence_summary
+        assert f"silicon ID {self._SHARED_ID} (read via " in summary
+
     def test_marking_is_blamed_before_the_pin_count(self):
         # The ID group is real and 28-pin, but the marking fragment excludes it,
         # so the pin count is not the thing to doubt.

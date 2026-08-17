@@ -251,12 +251,13 @@ class IdentifyScreen(ModalScreen[str | None]):
         self.query_one("#id-confirm-text", Static).update(
             f"About to read the chip ID through carrier profile:\n\n"
             f"    {carrier}\n\n"
-            f"This applies supply voltage to the {hint.pin_count}-pin DIP power pins "
-            f"and reads the ID only — nothing is written or erased.\n\n"
-            f"Align pin 1 towards the socket lever. If the chip is a different pin "
-            f"count than {hint.pin_count}, power could land on a signal pin.\n\n"
-            f"Pin contact is checked first and the probe only runs if that check "
-            f"confirms good contact."
+            f"The socket will be energized using that profile's own pin "
+            f"assignment. MiniGecko issues only minipro's read-ID command — "
+            f"never a write or an erase.\n\n"
+            f"Align pin 1 towards the socket lever. If the chip is not "
+            f"{hint.pin_count} pins, power may land on a signal pin.\n\n"
+            f"Pin contact is checked first, and the probe is abandoned unless "
+            f"that check confirms good contact."
             f"{adapter_note}"
         )
         self._show("id-step-confirm")

@@ -512,7 +512,9 @@ def identify(
         # A match proves ID equality, not identity: the carrier's ID siblings are
         # equally consistent with the read, so confirm the whole group.
         hits = chip_id_index().get(normalize_chip_id(observed or "")) or (carrier,)
-        _confirm(report, hits, observed or "carrier match", carrier)
+        _confirm(
+            report, hits, observed or "carrier match", carrier, from_catalogue=True
+        )
         if not any(c.confidence == "confirmed" for c in report.candidates):
             diagnostics.append(
                 f"The socketed chip identifies as {carrier}, which the current "
@@ -568,6 +570,7 @@ def _confirm(
     names: Sequence[str],
     observed_id: str,
     carrier: str,
+    from_catalogue: bool = False,
 ) -> None:
     """
     Attach silicon evidence to candidates whose names appear in *names*, and
@@ -577,17 +580,22 @@ def _confirm(
     A candidate's name is one of its entry's own canonical names and
     chip_id_index() indexes every canonical name, so a name-set intersection
     is exact.
+
+    *from_catalogue* marks the matched-read case, where *observed_id* is the
+    carrier entry's catalogue ID rather than a value any read reported, so the
+    evidence wording must not claim a read.
     """
     wanted = set(names)
     confirmed = [c for c in report.candidates if c.name in wanted]
 
+    detail = (
+        f"chip ID matches {carrier}'s catalogue ID {observed_id}"
+        if from_catalogue
+        else f"silicon ID {observed_id} (read via {carrier})"
+    )
+
     for cand in confirmed:
-        cand.evidence.append(
-            Evidence(
-                kind=EVIDENCE_SILICON_ID,
-                detail=f"silicon ID {observed_id} (read via {carrier})",
-            )
-        )
+        cand.evidence.append(Evidence(kind=EVIDENCE_SILICON_ID, detail=detail))
 
     if confirmed:
         confirmed.sort(key=lambda c: c.sort_key)
