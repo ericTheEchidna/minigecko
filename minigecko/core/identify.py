@@ -16,7 +16,9 @@ from __future__ import annotations
 import fnmatch
 import logging
 import re
+from collections.abc import Mapping
 from functools import lru_cache
+from types import MappingProxyType
 
 from minigecko.core.device_db import decode_flags, get_db, get_device
 
@@ -132,13 +134,17 @@ def unique_entries() -> tuple[dict, ...]:
 
 
 @lru_cache(maxsize=1)
-def chip_id_index() -> dict[str, list[str]]:
+def chip_id_index() -> Mapping[str, tuple[str, ...]]:
     """
     Reverse index: normalised chip ID -> device names carrying that ID.
 
     IDs are deliberately non-unique (0x01007e22 is shared by 136 devices), so
-    values are lists.  Entries without the has_chip_id flag, and the all-zero
-    placeholder ID, are excluded.
+    each key holds a group of names, de-duplicated in first-seen order.
+    Entries without the has_chip_id flag, and the all-zero placeholder ID, are
+    excluded.
+
+    The returned mapping is cached and shared by every caller, so it is
+    read-only: a caller wanting to sort or slice a group must copy it first.
     """
     index: dict[str, list[str]] = {}
     zero = normalize_chip_id("0x00000000")
@@ -153,7 +159,9 @@ def chip_id_index() -> dict[str, list[str]]:
             index.setdefault(key, []).append(name)
 
     logger.debug("chip_id_index: %d distinct IDs", len(index))
-    return index
+    return MappingProxyType(
+        {key: tuple(dict.fromkeys(names)) for key, names in index.items()}
+    )
 
 
 def probe_carriers(pin_count: int) -> list[str]:
