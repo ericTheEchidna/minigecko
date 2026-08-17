@@ -1666,6 +1666,22 @@ property of the signature rather than a convention."
 
 **Background:** Follow `minigecko/ui/modals/chip_select.py` for structure: a `ModalScreen` subclass with `DEFAULT_CSS`, `BINDINGS`, `compose()`, and action methods. `ChipSelectScreen` is `ModalScreen[str | None]` and dismisses with the selected device name — match that so the caller's callback shape is identical.
 
+**PACKAGE-DISPLAY REQUIREMENT carried in from the Task 5 review — this is not cosmetic.**
+
+A candidate's `name` is chosen for *addressability* (it must resolve back to its own catalogue
+entry), which occasionally means its package suffix disagrees with the entry's actual package.
+Real examples measured in the catalogue: `24C08@TSSOP8` for an entry whose package is `SOIC8`,
+and — in adapter DIP-8 mode — `GD55B01GE@BGA24`, a 24-pin BGA suffix on a candidate the user is
+seating in 8 pins. This happens when the better-matching name is itself shadowed by a different
+entry, so the addressable name is the safer of two imperfect options.
+
+Consequence for this screen: **display the package from `cand.entry["package"]`, never parsed out
+of `cand.name`.** Showing the name's suffix would tell the user their part is a package it is
+not. The results table therefore carries a separate Package column, and the row builder reads
+the entry. Fall back to the string `"unknown"` when the entry's package is empty — that is a real
+state for 749 catalogue entries, including almost every logic IC, and is honest where guessing
+would not be.
+
 The three steps live in one screen, swapping which container is visible, rather than three pushed screens — that keeps the entered hint alive when the user declines the safety gate and returns to step 1.
 
 Safety sequencing inside `_run_probe`, in this exact order:
@@ -1768,7 +1784,7 @@ class IdentifyScreen(ModalScreen[str | None]):
 
     def on_mount(self) -> None:
         table = self.query_one("#id-results", DataTable)
-        table.add_columns("Device", "Confidence", "Evidence")
+        table.add_columns("Device", "Package", "Confidence", "Evidence")
         table.cursor_type = "row"
         self.query_one("#id-pins", Input).focus()
 
@@ -1904,7 +1920,14 @@ class IdentifyScreen(ModalScreen[str | None]):
         table = self.query_one("#id-results", DataTable)
         table.clear()
         for cand in report.candidates[:200]:
-            table.add_row(cand.name, cand.confidence, cand.evidence_summary)
+            # Package comes from the ENTRY, never parsed out of cand.name — see
+            # the package-display requirement above.
+            table.add_row(
+                cand.name,
+                cand.entry.get("package") or "unknown",
+                cand.confidence,
+                cand.evidence_summary,
+            )
 
         self.query_one("#id-diagnostics", Static).update("\n".join(report.diagnostics))
 
