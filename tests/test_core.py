@@ -1,12 +1,11 @@
 """
 tests/test_core.py
 ~~~~~~~~~~~~~~~~~~
-Unit tests for the minipro bridge and logicdb.
+Unit tests for the minipro bridge, logicdb, and the identification engine.
 
-Tests are split into two classes:
-    - TestMiniproResult                      — pure unit tests, no system deps
-  - TestLogicDB                            — requires minipro's logicic.xml;
-                                             skipped automatically when absent
+One class per unit under test.  Most are pure unit tests with no system
+dependencies; the logicdb class needs minipro's logicic.xml and skips
+automatically when it is absent.
 """
 
 import pytest

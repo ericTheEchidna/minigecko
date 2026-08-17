@@ -9,6 +9,9 @@ optionally confirms with a single read-only chip-ID probe.
 
 Hardware access is injected: `identify()` touches the programmer only when a
 probe callable is passed in.
+
+device_db entries are shared, cached objects: treat every entry this module
+hands out as read-only and never mutate one you did not build yourself.
 """
 
 from __future__ import annotations
@@ -234,7 +237,6 @@ CONFIDENCE_ORDER = {"confirmed": 0, "probable": 1, "possible": 2}
 @dataclass(frozen=True)
 class ChipHint:
     """What the user can see without powering anything."""
-
     pin_count: int
     via_adapter: bool = False
     marking: str | None = None
@@ -243,7 +245,6 @@ class ChipHint:
 @dataclass(frozen=True)
 class Evidence:
     """One reason a candidate is plausible, kept as data so the UI can show it."""
-
     kind: str
     detail: str
 
@@ -251,9 +252,8 @@ class Evidence:
 @dataclass
 class Candidate:
     """A device that could be the chip in the socket, plus why."""
-
     name: str
-    entry: dict
+    entry: dict  # shared device_db entry, read-only — see the module docstring
     evidence: list[Evidence] = field(default_factory=list)
 
     @property
@@ -282,7 +282,6 @@ class Candidate:
 @dataclass
 class NextStep:
     """A deeper identification pass this stage does not implement yet."""
-
     label: str
     estimate: str
     stage: int
@@ -292,7 +291,6 @@ class NextStep:
 @dataclass
 class IdentifyReport:
     """Result of an identification attempt.  "Couldn't tell" is a valid result."""
-
     candidates: list[Candidate]
     diagnostics: list[str]
     suggested_next: list[NextStep]
