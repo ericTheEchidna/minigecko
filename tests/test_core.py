@@ -17,12 +17,14 @@ from minigecko.core.identify import (
     EVIDENCE_MARKING,
     EVIDENCE_PACKAGE,
     EVIDENCE_SILICON_ID,
+    MUTE_IDS,
     Candidate,
     ChipHint,
     Evidence,
     IdentifyReport,
     NextStep,
     chip_id_index,
+    identify,
     is_id_capable,
     marking_matches,
     normalize_chip_id,
@@ -31,6 +33,7 @@ from minigecko.core.identify import (
     probe_carriers,
     socket_pins,
     socket_width,
+    suggested_next_steps,
     tier0_candidates,
     unique_entries,
 )
@@ -561,3 +564,131 @@ class TestSocketWidth:
 
     def test_default_is_40(self):
         assert DEFAULT_SOCKET_WIDTH == 40
+
+
+# ---------------------------------------------------------------------------
+# identify() orchestrator
+# ---------------------------------------------------------------------------
+
+class TestIdentifyTier0Only:
+    def test_no_probe_means_no_hardware(self):
+        report = identify(ChipHint(pin_count=28))
+        assert report.candidates
+        assert report.observed_id is None
+        assert report.carrier is None
+
+    def test_diagnostic_explains_tier0_only(self):
+        report = identify(ChipHint(pin_count=28))
+        assert any("no probe" in d.lower() for d in report.diagnostics)
+
+    def test_empty_result_is_diagnosed_not_raised(self):
+        report = identify(ChipHint(pin_count=28, marking="ZZZQQQ"))
+        assert report.candidates == []
+        assert any("no candidate" in d.lower() for d in report.diagnostics)
+
+    def test_suggests_next_steps(self):
+        report = identify(ChipHint(pin_count=14))
+        assert report.suggested_next
+        assert all(step.available is False for step in report.suggested_next)
+
+
+class TestIdentifyTier1:
+    # 0x00000110 is carried by 6 catalogue devices, 3 of them DIP-28
+    # (AM27C256@DIP28, AM27H256@DIP28, 27CX256@DIP28) — a real shared-ID group
+    # that actually intersects a 28-pin hint.  Verified against the live DB.
+    _SHARED_ID = "0x00000110"
+
+    def _shared_id_probe(self, carrier):
+        return {
+            "chip_id": self._SHARED_ID,
+            "expected_id": "0x0108",
+            "matched": False,
+        }
+
+    def test_probe_narrows_to_the_id_group(self):
+        report = identify(ChipHint(pin_count=28), probe=self._shared_id_probe)
+        assert report.observed_id == self._SHARED_ID
+        assert report.carrier is not None
+        assert report.candidates
+        assert all(c.confidence == "confirmed" for c in report.candidates)
+
+    def test_probe_result_is_intersected_with_tier0(self):
+        tier0 = {c.name for c in tier0_candidates(ChipHint(pin_count=28))}
+        report = identify(ChipHint(pin_count=28), probe=self._shared_id_probe)
+        assert {c.name for c in report.candidates} <= tier0
+        # The group collapses: 6 devices carry the ID, only the 28-pin ones survive.
+        assert 0 < len(report.candidates) < 6
+
+    def test_mute_id_is_diagnostic_not_a_match(self):
+        probe = lambda carrier: {
+            "chip_id": "0xFFFF",
+            "expected_id": "0x0108",
+            "matched": False,
+        }
+        report = identify(ChipHint(pin_count=28), probe=probe)
+        assert any(
+            "mute" in d.lower() or "inserted" in d.lower() for d in report.diagnostics
+        )
+        assert all(c.confidence != "confirmed" for c in report.candidates)
+
+    def test_all_zero_id_is_mute(self):
+        assert normalize_chip_id("0x0000") in MUTE_IDS
+
+    def test_unknown_id_reports_raw_value(self):
+        probe = lambda carrier: {
+            "chip_id": "0xDEADBE",
+            "expected_id": "0x0108",
+            "matched": False,
+        }
+        report = identify(ChipHint(pin_count=28), probe=probe)
+        assert any("0xDEADBE" in d for d in report.diagnostics)
+        # Falls back to the tier 0 shortlist rather than returning nothing.
+        assert report.candidates
+
+    def test_matched_probe_confirms_the_carrier(self):
+        probe = lambda carrier: {"chip_id": None, "expected_id": None, "matched": True}
+        report = identify(ChipHint(pin_count=28), probe=probe)
+        assert report.carrier is not None
+        assert any(c.name == report.carrier for c in report.candidates)
+        carrier_cand = next(c for c in report.candidates if c.name == report.carrier)
+        assert carrier_cand.confidence == "confirmed"
+
+    def test_probe_exception_is_diagnosed_not_raised(self):
+        def boom(carrier):
+            raise OSError("usb went away")
+
+        report = identify(ChipHint(pin_count=28), probe=boom)
+        assert any("usb went away" in d for d in report.diagnostics)
+        assert report.candidates  # tier 0 survives
+
+    def test_no_carrier_available_is_diagnosed(self):
+        called = []
+        probe = lambda carrier: called.append(carrier) or {}
+        # 16-pin DIP has 131 catalogue candidates but ZERO ID-capable carriers,
+        # so there is nothing to probe with.  Verified against the live DB — do
+        # not use 14 here, which has 9 carriers.
+        report = identify(ChipHint(pin_count=16), probe=probe)
+        assert called == []
+        assert report.candidates  # tier 0 still produced a shortlist
+        assert any("carrier" in d.lower() for d in report.diagnostics)
+
+    def test_no_probe_does_not_call_the_hardware_path(self, monkeypatch):
+        from minigecko.core import minipro as mp
+        monkeypatch.setattr(
+            mp, "_run",
+            lambda *a, **k: pytest.fail("identify() reached minipro without a probe"),
+        )
+        assert identify(ChipHint(pin_count=28)).candidates
+
+
+class TestSuggestedNextSteps:
+    def test_logic_candidates_suggest_the_sweep(self):
+        steps = suggested_next_steps(tier0_candidates(ChipHint(pin_count=14)))
+        assert any(step.stage == 2 for step in steps)
+
+    def test_steps_carry_estimates(self):
+        steps = suggested_next_steps(tier0_candidates(ChipHint(pin_count=14)))
+        assert all(step.estimate for step in steps)
+
+    def test_no_candidates_means_no_steps(self):
+        assert suggested_next_steps([]) == []

@@ -19,13 +19,13 @@ from __future__ import annotations
 import fnmatch
 import logging
 import re
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import lru_cache
 from types import MappingProxyType
 
 from minigecko.core.device_db import decode_flags, get_db, get_device
-from minigecko.core.minipro import ProgrammerInfo, detect_programmer
+from minigecko.core.minipro import ProgrammerInfo, detect_programmer, read_chip_id
 
 logger = logging.getLogger(__name__)
 
@@ -393,3 +393,183 @@ def socket_width(info: ProgrammerInfo | None = None) -> int:
     if not info.connected:
         return DEFAULT_SOCKET_WIDTH
     return _SOCKET_WIDTHS.get(info.hardware, DEFAULT_SOCKET_WIDTH)
+
+
+# ---------------------------------------------------------------------------
+# Tier 1 — silicon ID probe
+# ---------------------------------------------------------------------------
+
+# IDs meaning "nothing inserted, or the chip is electrically mute".
+# Verified with an empty socket: minipro reports 0xFFFF.
+MUTE_IDS = frozenset({normalize_chip_id("0xFFFF"), normalize_chip_id("0x0000")})
+
+ProbeResult = dict
+
+
+def default_probe(carrier: str) -> ProbeResult:
+    """
+    The real hardware path: read the chip ID through *carrier*, read-only.
+
+    Takes only a carrier name and returns only data — there is no payload
+    parameter, so no call shape can write to the chip.
+    """
+    return read_chip_id(carrier).data or {}
+
+
+def suggested_next_steps(candidates: list[Candidate]) -> list[NextStep]:
+    """
+    Deeper passes that could narrow *candidates* further.
+
+    Stage 1 only advertises these; ``available`` stays False until the
+    implementing stage lands.
+    """
+    steps: list[NextStep] = []
+    type_labels = {c.entry.get("type_label", "") for c in candidates}
+
+    logic = [c for c in candidates if c.entry.get("type_label") == "Logic IC"]
+    if logic:
+        steps.append(
+            NextStep(
+                label=f"Logic vector sweep — {len(logic)} candidates",
+                estimate=f"~{max(1, round(len(logic) * 1.5 / 60))} min",
+                stage=2,
+            )
+        )
+
+    if type_labels & {"SRAM", "ROM / EEPROM / Flash"}:
+        steps.append(
+            NextStep(
+                label="Memory capacity profiling",
+                estimate="~2 min",
+                stage=3,
+            )
+        )
+
+    return steps
+
+
+def identify(
+    hint: ChipHint,
+    probe: Callable[[str], ProbeResult] | None = None,
+) -> IdentifyReport:
+    """
+    Identify the chip described by *hint*, narrowing cheapest-first.
+
+    With *probe* omitted this runs Tier 0 only and touches no hardware — the
+    engine cannot energize the socket unless a probe is handed in explicitly.
+    Pass ``probe=default_probe`` for the real read-only ID read.
+
+    Failures are reported as diagnostics rather than raised: "couldn't tell"
+    is a legitimate outcome.
+    """
+    diagnostics: list[str] = []
+    candidates = tier0_candidates(hint)
+
+    if not candidates:
+        diagnostics.append(
+            "No candidates matched. Try adapter mode, or relax the marking fragment."
+        )
+
+    # report.diagnostics is this same list object, so later appends land in the
+    # report.
+    report = IdentifyReport(
+        candidates=candidates,
+        diagnostics=diagnostics,
+        suggested_next=suggested_next_steps(candidates),
+    )
+
+    if probe is None:
+        diagnostics.append("Catalogue filter only — no probe supplied, no hardware used.")
+        return report
+
+    carriers = probe_carriers(hint.pin_count)
+    if not carriers:
+        diagnostics.append(
+            f"No probe carrier available for {hint.pin_count} pins — "
+            "no ID-capable DIP profile of that width exists. Catalogue filter only."
+        )
+        return report
+
+    carrier = carriers[0]
+    report.carrier = carrier
+
+    try:
+        probe_data = probe(carrier) or {}
+    except Exception as exc:  # hardware and subprocess failures are expected
+        diagnostics.append(f"Probe failed via carrier {carrier}: {exc}")
+        return report
+
+    if probe_data.get("matched"):
+        entry = get_device(carrier)
+        observed = (entry or {}).get("chip_id")
+        report.observed_id = observed
+        diagnostics.append(f"Chip ID matched carrier {carrier} exactly.")
+        _confirm(report, [carrier], observed or "carrier match", carrier)
+        return report
+
+    raw_id = probe_data.get("chip_id")
+    if not raw_id:
+        diagnostics.append(
+            f"Could not read a chip ID via carrier {carrier}. Catalogue filter only."
+        )
+        return report
+
+    report.observed_id = raw_id
+    key = normalize_chip_id(raw_id)
+
+    if key in MUTE_IDS:
+        diagnostics.append(
+            f"Read {raw_id} via carrier {carrier} — nothing inserted, or the chip "
+            "does not implement an ID command. Catalogue filter only."
+        )
+        return report
+
+    hits = chip_id_index().get(key)
+    if not hits:
+        diagnostics.append(
+            f"Read chip ID {raw_id} via carrier {carrier}, but no catalogue device "
+            "carries it. Search that ID manually. Catalogue filter only."
+        )
+        return report
+
+    _confirm(report, hits, raw_id, carrier)
+
+    if not any(c.confidence == "confirmed" for c in report.candidates):
+        diagnostics.append(
+            f"Chip ID {raw_id} matched {len(hits)} catalogue devices, but none of "
+            f"them are {hint.pin_count}-pin. The stated pin count may be wrong."
+        )
+
+    return report
+
+
+def _confirm(
+    report: IdentifyReport,
+    names: Sequence[str],
+    observed_id: str,
+    carrier: str,
+) -> None:
+    """
+    Attach silicon evidence to candidates whose names appear in *names*, and
+    drop the rest.  Intersection is what collapses a shared ID group — some
+    IDs are carried by over 100 devices.
+
+    A candidate's name is one of its entry's own canonical names and
+    chip_id_index() indexes every canonical name, so a name-set intersection
+    is exact.
+    """
+    wanted = set(names)
+    confirmed = [c for c in report.candidates if c.name in wanted]
+
+    for cand in confirmed:
+        cand.evidence.append(
+            Evidence(
+                kind=EVIDENCE_SILICON_ID,
+                detail=f"silicon ID {observed_id} (read via {carrier})",
+            )
+        )
+
+    if confirmed:
+        confirmed.sort(key=lambda c: c.sort_key)
+        report.candidates = confirmed
+        report.suggested_next = suggested_next_steps(confirmed)
