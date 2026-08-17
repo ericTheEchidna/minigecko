@@ -731,6 +731,42 @@ git commit -m "feat(identify): add candidate data model and confidence rule"
 **Interfaces:**
 - Consumes: `socket_pins`, `package_family`, `DIP_FAMILIES`, `marking_matches`, `unique_entries`, `ChipHint`, `Candidate`, `Evidence`, `EVIDENCE_PACKAGE`, `EVIDENCE_MARKING`
 - Produces: `tier0_candidates(hint: ChipHint) -> list[Candidate]`
+- Modifies: Task 3's `_addressable_name` → generalised and renamed `addressable_name` (see the required change below)
+
+**REQUIRED CHANGE carried in from the Task 3 review — do this first.**
+
+Task 3 discovered that `device_db` name keys are not unique: `27C256@DIP28` is claimed by both a
+PHILIPS entry (not ID-capable) and a MICROCHIP one, and `get_device` resolves it to the PHILIPS
+entry. Task 3 solved this for probe carriers with a private `_addressable_name(entry)`.
+
+**`Candidate.name` has the same defect, and it is worse there.** Naming a candidate
+`canonical_names[0]` means that for the 179 shadowed entries the `Candidate` would carry
+`entry` = the device we identified while `name` denotes a *different* device — and Task 10
+assigns that name to `MiniGeckoApp._selected_ic`, from which every later `minipro -p <name>`
+operation is built. The user would identify a chip correctly and then read, verify, or erase
+the wrong one.
+
+So, before writing `tier0_candidates`:
+
+1. **Generalise** `_addressable_name` to prefer a name consistent with the entry's **own**
+   family and pin count — `package_family(entry)` and `socket_pins(entry)` — instead of
+   hardcoding `DIP_FAMILIES` and the caller's pin count. This is behaviour-preserving for probe
+   carriers, because a DIP carrier's own family *is* DIP; and it is **necessary** for adapter
+   mode, where a SOIC-8 entry must not be renamed to a DIP name.
+2. **Rename** it `addressable_name` (drop the leading underscore) since it now has two callers,
+   and keep its first-resolving-name fallback and docstring.
+3. Use it for `Candidate.name` in `tier0_candidates`.
+
+Task 3's two carrier property tests (`test_carrier_names_agree_with_the_requested_package`,
+`test_carrier_names_resolve_to_eligible_entries`) must still pass — they are the regression net
+for step 1. Add one test for the new behaviour:
+
+```python
+    def test_candidate_names_resolve_to_their_own_entry(self):
+        from minigecko.core.device_db import get_device
+        for cand in tier0_candidates(ChipHint(pin_count=28))[:60]:
+            assert get_device(cand.name) is cand.entry, cand.name
+```
 
 **Background:** Tier 0 touches no hardware at all. It filters to entries whose resolved socket pin count matches exactly, restricted to DIP unless `via_adapter` is set, then applies the marking fragment.
 
@@ -867,7 +903,11 @@ def tier0_candidates(hint: ChipHint) -> list[Candidate]:
                 Evidence(kind=EVIDENCE_MARKING, detail=f"marking matches {marking!r}")
             )
 
-        candidates.append(Candidate(name=names[0], entry=entry, evidence=evidence))
+        # NOT names[0] — see the REQUIRED CHANGE above. names[0] can denote a
+        # different entry than the one we matched.
+        candidates.append(
+            Candidate(name=addressable_name(entry), entry=entry, evidence=evidence)
+        )
 
     candidates.sort(key=lambda c: c.sort_key)
     return candidates
