@@ -416,7 +416,7 @@ def default_probe(carrier: str) -> ProbeResult:
     return read_chip_id(carrier).data or {}
 
 
-def suggested_next_steps(candidates: list[Candidate]) -> list[NextStep]:
+def suggested_next_steps(candidates: Sequence[Candidate]) -> list[NextStep]:
     """
     Deeper passes that could narrow *candidates* further.
 
@@ -500,11 +500,21 @@ def identify(
         return report
 
     if probe_data.get("matched"):
+        # probe_carriers only reports names get_device() resolves, so the lookup
+        # cannot fail here.
         entry = get_device(carrier)
         observed = (entry or {}).get("chip_id")
         report.observed_id = observed
         diagnostics.append(f"Chip ID matched carrier {carrier} exactly.")
-        _confirm(report, [carrier], observed or "carrier match", carrier)
+        # A match proves ID equality, not identity: the carrier's ID siblings are
+        # equally consistent with the read, so confirm the whole group.
+        hits = chip_id_index().get(normalize_chip_id(observed or "")) or (carrier,)
+        _confirm(report, hits, observed or "carrier match", carrier)
+        if not any(c.confidence == "confirmed" for c in report.candidates):
+            diagnostics.append(
+                f"The socketed chip identifies as {carrier}, which the current "
+                "filter excluded."
+            )
         return report
 
     raw_id = probe_data.get("chip_id")
@@ -535,10 +545,17 @@ def identify(
     _confirm(report, hits, raw_id, carrier)
 
     if not any(c.confidence == "confirmed" for c in report.candidates):
-        diagnostics.append(
-            f"Chip ID {raw_id} matched {len(hits)} catalogue devices, but none of "
-            f"them are {hint.pin_count}-pin. The stated pin count may be wrong."
-        )
+        if hint.marking:
+            diagnostics.append(
+                f"Chip ID {raw_id} matched {len(hits)} catalogue devices, but none "
+                "of them are in the current shortlist. The marking fragment "
+                f"{hint.marking!r} may be excluding the right one."
+            )
+        else:
+            diagnostics.append(
+                f"Chip ID {raw_id} matched {len(hits)} catalogue devices, but none of "
+                f"them are {hint.pin_count}-pin. The stated pin count may be wrong."
+            )
 
     return report
 

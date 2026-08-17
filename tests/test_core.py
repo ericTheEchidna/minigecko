@@ -26,6 +26,7 @@ from minigecko.core.identify import (
     IdentifyReport,
     NextStep,
     chip_id_index,
+    default_probe,
     identify,
     is_id_capable,
     marking_matches,
@@ -667,6 +668,22 @@ class TestIdentifyTier1:
         carrier_cand = next(c for c in report.candidates if c.name == report.carrier)
         assert carrier_cand.confidence == "confirmed"
 
+    def test_marking_is_blamed_before_the_pin_count(self):
+        # The ID group is real and 28-pin, but the marking fragment excludes it,
+        # so the pin count is not the thing to doubt.
+        report = identify(
+            ChipHint(pin_count=28, marking="AM2764"), probe=self._shared_id_probe
+        )
+        assert any("marking" in d.lower() for d in report.diagnostics)
+        assert not any("pin count may be wrong" in d for d in report.diagnostics)
+
+    def test_matched_carrier_excluded_by_marking_is_still_reported(self):
+        probe = lambda carrier: {"chip_id": None, "expected_id": None, "matched": True}
+        report = identify(ChipHint(pin_count=28, marking="AM2764"), probe=probe)
+        assert report.carrier is not None
+        # the user must still learn what the socketed chip is
+        assert any(report.carrier in d for d in report.diagnostics)
+
     def test_probe_exception_is_diagnosed_not_raised(self):
         def boom(carrier):
             raise OSError("usb went away")
@@ -693,6 +710,38 @@ class TestIdentifyTier1:
             lambda *a, **k: pytest.fail("identify() reached minipro without a probe"),
         )
         assert identify(ChipHint(pin_count=28)).candidates
+
+
+class TestDefaultProbe:
+    def _with_read_chip_id(self, monkeypatch, result):
+        ident = importlib.import_module("minigecko.core.identify")
+        seen = []
+        monkeypatch.setattr(
+            ident, "read_chip_id",
+            lambda device: seen.append(device) or result,
+        )
+        return seen
+
+    def test_returns_the_data_dict_verbatim(self, monkeypatch):
+        data = {"chip_id": "0X1C2013", "expected_id": "0X01007E22", "matched": False}
+        seen = self._with_read_chip_id(
+            monkeypatch, MiniproResult(ok=False, returncode=1, data=data)
+        )
+        assert default_probe("AM2764A@DIP28") == data
+        assert seen == ["AM2764A@DIP28"]
+
+    def test_failed_transport_data_is_still_returned(self, monkeypatch):
+        # ok is False and returncode nonzero on every mismatch, which is this
+        # path's success case: default_probe must not gate on either.
+        data = {"chip_id": None, "expected_id": None, "matched": False}
+        self._with_read_chip_id(
+            monkeypatch, MiniproResult(ok=False, returncode=1, data=data)
+        )
+        assert default_probe("X") == data
+
+    def test_absent_data_becomes_empty_dict(self, monkeypatch):
+        self._with_read_chip_id(monkeypatch, MiniproResult(ok=False))
+        assert default_probe("X") == {}
 
 
 class TestSuggestedNextSteps:
