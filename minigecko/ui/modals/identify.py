@@ -7,6 +7,7 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
+from textual.worker import get_current_worker
 from textual.widgets import Button, Checkbox, DataTable, Footer, Input, Label, Static
 
 from minigecko.core.identify import (
@@ -57,6 +58,7 @@ class IdentifyScreen(ModalScreen[str | None]):
         self._hint: ChipHint | None = None
         self._carrier: str | None = None
         self._probing = False
+        self._probe_seq = 0
         self._report: IdentifyReport | None = None
 
     # -- compose ---------------------------------------------------------
@@ -141,9 +143,15 @@ class IdentifyScreen(ModalScreen[str | None]):
         # socket.  Threaded and exclusive because adapter mode costs ~0.27 s per
         # keystroke, which queues up as visible lag on the main thread.
         count = len(tier0_candidates(hint))
-        self.app.call_from_thread(
-            self.query_one("#id-count", Static).update, f"{count} catalogue candidates"
-        )
+        # exclusive cancels the previous worker but cannot preempt it, so a
+        # superseded count must drop its result rather than land second.
+        if get_current_worker().is_cancelled:
+            return
+        self.app.call_from_thread(self._set_count, count)
+
+    def _set_count(self, count: int) -> None:
+        if self.is_mounted:
+            self.query_one("#id-count", Static).update(f"{count} catalogue candidates")
 
     def on_input_changed(self, event: Input.Changed) -> None:
         self._refresh_count()
@@ -182,13 +190,14 @@ class IdentifyScreen(ModalScreen[str | None]):
         elif button == "id-confirm":
             # One press, one energization.  Two clicks land as two queued
             # messages before either is handled, so disabling the button is not
-            # enough on its own — the flag is what the second message sees.
-            if self._probing:
+            # enough on its own — the flag is what the second message sees, and
+            # it stays set until the worker that holds the socket returns.
+            if self._probing or not (self._hint and self._carrier):
                 return
             self._probing = True
+            self._probe_seq += 1
             event.button.disabled = True
-            if self._hint and self._carrier:
-                self._run_probe(self._hint, self._carrier)
+            self._run_probe(self._hint, self._carrier, self._probe_seq)
 
         elif button == "id-restart":
             self._back_to_input()
@@ -199,11 +208,19 @@ class IdentifyScreen(ModalScreen[str | None]):
     # -- safety gate -----------------------------------------------------
 
     def _back_to_input(self) -> None:
-        """Return to step 1, discarding any consent already given."""
+        """
+        Return to step 1, discarding any consent already given.
+
+        ``_probing`` is deliberately left alone: a thread worker cannot be
+        preempted, so a probe still holding the socket must keep refusing a
+        second consent until it returns.  Bumping the sequence retires that
+        probe's report instead, so it cannot drag the user to the results step
+        or replace the report behind "Use selected device".
+        """
         self._hint = None
         self._carrier = None
-        self._probing = False
-        self.query_one("#id-confirm", Button).disabled = False
+        self._probe_seq += 1
+        self.query_one("#id-confirm", Button).disabled = self._probing
         self._show("id-step-input")
 
     def _prepare_confirm(self, hint: ChipHint) -> None:
@@ -245,13 +262,14 @@ class IdentifyScreen(ModalScreen[str | None]):
         self._show("id-step-confirm")
 
     @work(thread=True)
-    def _run_probe(self, hint: ChipHint, carrier: str) -> None:
+    def _run_probe(self, hint: ChipHint, carrier: str, seq: int) -> None:
         from minigecko.core import pin_check_device
 
         # Threaded: each minipro call can block for the full 120 s subprocess
         # timeout, and the main thread must stay free to repaint and to service
         # the escape binding while a chip is energized.  Every widget mutation
-        # goes back through call_from_thread.
+        # goes back through _finish, and every exit path must reach it — it is
+        # what clears _probing and lets a second consent through.
 
         # Contact first, probe second — never the other way round.  The gate is
         # positive and needs both signals: ok is only returncode == 0, while
@@ -263,12 +281,12 @@ class IdentifyScreen(ModalScreen[str | None]):
             report.diagnostics.insert(
                 0, f"Pin contact check failed, so nothing was energized: {exc}"
             )
-            self.app.call_from_thread(self._present, report)
+            self._finish(seq, report)
             return
 
         bad = (contact.data or {}).get("bad_pins") or []
         if contact.ok and not bad:
-            self.app.call_from_thread(self._present, identify(hint, probe=default_probe))
+            self._finish(seq, identify(hint, probe=default_probe))
             return
 
         report = identify(hint)
@@ -292,11 +310,35 @@ class IdentifyScreen(ModalScreen[str | None]):
                 0,
                 f"Bad contact on pin(s) {pins} — reseat the chip. Probe aborted.",
             )
-        self.app.call_from_thread(self._present, report)
+        self._finish(seq, report)
+
+    def _finish(self, seq: int, report: IdentifyReport) -> None:
+        """Worker's last act, from the worker thread: hand *report* to the UI."""
+        try:
+            self.app.call_from_thread(self._probe_done, seq, report)
+        except Exception:
+            # The app went away while the probe was in flight, so there is no UI
+            # left to tell and no second consent left to block.
+            self._probing = False
+
+    def _probe_done(self, seq: int, report: IdentifyReport) -> None:
+        """Main thread: the socket is released, so allow a new consent."""
+        self._probing = False
+        if not self.is_mounted:
+            return
+        self.query_one("#id-confirm", Button).disabled = False
+        # A retired probe — the user left the confirm step while it ran — must
+        # not pull them to the results step or replace the report behind
+        # "Use selected device".
+        if seq == self._probe_seq:
+            self._present(report)
 
     # -- results ---------------------------------------------------------
 
     def _present(self, report: IdentifyReport) -> None:
+        if not self.is_mounted:
+            return
+
         self._report = report
 
         table = self.query_one("#id-results", DataTable)
@@ -347,4 +389,15 @@ class IdentifyScreen(ModalScreen[str | None]):
         self.dismiss(self._report.candidates[row].name)
 
     def action_cancel(self) -> None:
+        # Held rather than obeyed: dismissing mid-probe would read as a clean
+        # exit while the socket is still energized.  The wait is bounded by
+        # minipro's own subprocess timeout.
+        if self._probing:
+            self.notify(
+                "A probe is still running and the socket is energized. "
+                "Cancel is held until minipro returns.",
+                severity="warning",
+                timeout=6,
+            )
+            return
         self.dismiss(None)
