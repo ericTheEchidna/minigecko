@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from textual import work
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
@@ -54,6 +55,8 @@ class IdentifyScreen(ModalScreen[str | None]):
         super().__init__()
         self._width = socket_width()
         self._hint: ChipHint | None = None
+        self._carrier: str | None = None
+        self._probing = False
         self._report: IdentifyReport | None = None
 
     # -- compose ---------------------------------------------------------
@@ -64,7 +67,7 @@ class IdentifyScreen(ModalScreen[str | None]):
 
             with Vertical(id="id-step-input"):
                 yield Label(f"Pin count (8-{self._width}, even):")
-                yield Input(placeholder="28", id="id-pins")
+                yield Input(placeholder="28", type="integer", id="id-pins")
                 yield Checkbox("Mounted on an adapter (non-DIP part)", id="id-adapter")
                 yield Label("Surviving marking characters (optional, ? and * allowed):")
                 yield Input(placeholder="74??00", id="id-marking")
@@ -108,7 +111,9 @@ class IdentifyScreen(ModalScreen[str | None]):
 
     def _read_hint(self) -> ChipHint | None:
         raw = self.query_one("#id-pins", Input).value.strip()
-        if not raw.isdigit():
+        # isascii() first: "²".isdigit() is True but int("²") raises, and "٣"
+        # would silently mean 3.
+        if not (raw.isascii() and raw.isdigit()):
             self.query_one("#id-count", Static).update("Enter a pin count.")
             return None
 
@@ -125,14 +130,26 @@ class IdentifyScreen(ModalScreen[str | None]):
             marking=self.query_one("#id-marking", Input).value.strip() or None,
         )
 
-    def on_input_changed(self, event: Input.Changed) -> None:
+    def _refresh_count(self) -> None:
         hint = self._read_hint()
-        if hint is None:
-            return
+        if hint is not None:
+            self._count_candidates(hint)
+
+    @work(thread=True, exclusive=True)
+    def _count_candidates(self, hint: ChipHint) -> None:
         # Tier 0 only: no probe argument, so this live count never energizes the
-        # socket.
+        # socket.  Threaded and exclusive because adapter mode costs ~0.27 s per
+        # keystroke, which queues up as visible lag on the main thread.
         count = len(tier0_candidates(hint))
-        self.query_one("#id-count", Static).update(f"{count} catalogue candidates")
+        self.app.call_from_thread(
+            self.query_one("#id-count", Static).update, f"{count} catalogue candidates"
+        )
+
+    def on_input_changed(self, event: Input.Changed) -> None:
+        self._refresh_count()
+
+    def on_checkbox_changed(self, event: Checkbox.Changed) -> None:
+        self._refresh_count()
 
     # -- buttons ---------------------------------------------------------
 
@@ -157,31 +174,58 @@ class IdentifyScreen(ModalScreen[str | None]):
                 )
                 self._present(report)
                 return
-            self._hint = hint
             self._prepare_confirm(hint)
 
         elif button == "id-back":
-            self._show("id-step-input")
+            self._back_to_input()
 
         elif button == "id-confirm":
-            if self._hint:
-                self._run_probe(self._hint)
+            # One press, one energization.  Two clicks land as two queued
+            # messages before either is handled, so disabling the button is not
+            # enough on its own — the flag is what the second message sees.
+            if self._probing:
+                return
+            self._probing = True
+            event.button.disabled = True
+            if self._hint and self._carrier:
+                self._run_probe(self._hint, self._carrier)
 
         elif button == "id-restart":
-            self._show("id-step-input")
+            self._back_to_input()
 
         elif button == "id-use":
             self._use_selection()
 
     # -- safety gate -----------------------------------------------------
 
+    def _back_to_input(self) -> None:
+        """Return to step 1, discarding any consent already given."""
+        self._hint = None
+        self._carrier = None
+        self._probing = False
+        self.query_one("#id-confirm", Button).disabled = False
+        self._show("id-step-input")
+
     def _prepare_confirm(self, hint: ChipHint) -> None:
         carriers = probe_carriers(hint.pin_count)
         if not carriers:
-            self._present(identify(hint))
+            # 10, 12, 16, 22, 24, 26, 30, 34, 36 and 38 pins have no carrier, and
+            # the user did ask for a probe, so say why there wasn't one.
+            report = identify(hint)
+            report.diagnostics.insert(
+                0,
+                f"No probe carrier available for {hint.pin_count} pins — no "
+                "ID-capable DIP profile of that width exists. Nothing was "
+                "energized.",
+            )
+            self._present(report)
             return
 
         carrier = carriers[0]
+        # Set only on the branch that reaches the confirm step, so _run_probe can
+        # never see a hint the user was not shown a gate for.
+        self._hint = hint
+        self._carrier = carrier
         adapter_note = (
             "\n\nAdapter mode: double-check the adapter's own pin-1 orientation too."
             if hint.via_adapter
@@ -200,22 +244,34 @@ class IdentifyScreen(ModalScreen[str | None]):
         )
         self._show("id-step-confirm")
 
-    def _run_probe(self, hint: ChipHint) -> None:
+    @work(thread=True)
+    def _run_probe(self, hint: ChipHint, carrier: str) -> None:
         from minigecko.core import pin_check_device
 
-        carriers = probe_carriers(hint.pin_count)
-        carrier = carriers[0]
+        # Threaded: each minipro call can block for the full 120 s subprocess
+        # timeout, and the main thread must stay free to repaint and to service
+        # the escape binding while a chip is energized.  Every widget mutation
+        # goes back through call_from_thread.
 
         # Contact first, probe second — never the other way round.  The gate is
-        # positive: only an affirmatively good check proceeds, so a check that
-        # could not run cannot be mistaken for a check that passed.
-        contact = pin_check_device(carrier)
-        if contact.ok:
-            self._present(identify(hint, probe=default_probe))
+        # positive and needs both signals: ok is only returncode == 0, while
+        # bad_pins comes from parsed output, so neither alone is sufficient.
+        try:
+            contact = pin_check_device(carrier)
+        except Exception as exc:  # hardware and subprocess failures are expected
+            report = identify(hint)
+            report.diagnostics.insert(
+                0, f"Pin contact check failed, so nothing was energized: {exc}"
+            )
+            self.app.call_from_thread(self._present, report)
+            return
+
+        bad = (contact.data or {}).get("bad_pins") or []
+        if contact.ok and not bad:
+            self.app.call_from_thread(self._present, identify(hint, probe=default_probe))
             return
 
         report = identify(hint)
-        bad = (contact.data or {}).get("bad_pins") or []
         if not bad:
             # -z is unavailable or errored, so the contact state is unknown.  For
             # some device classes this is simply how minipro behaves.
@@ -236,7 +292,7 @@ class IdentifyScreen(ModalScreen[str | None]):
                 0,
                 f"Bad contact on pin(s) {pins} — reseat the chip. Probe aborted.",
             )
-        self._present(report)
+        self.app.call_from_thread(self._present, report)
 
     # -- results ---------------------------------------------------------
 
