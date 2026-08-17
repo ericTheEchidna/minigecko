@@ -8,6 +8,8 @@ dependencies; the logicdb class needs minipro's logicic.xml and skips
 automatically when it is absent.
 """
 
+import importlib
+
 import pytest
 
 from minigecko.core.identify import (
@@ -541,6 +543,8 @@ class TestReadChipId:
         )
         mp.read_chip_id("AM2764A@DIP28")
         assert seen == [["-p", "AM2764A@DIP28", "-D"]]
+
+
 # ---------------------------------------------------------------------------
 # Socket width
 # ---------------------------------------------------------------------------
@@ -564,6 +568,16 @@ class TestSocketWidth:
 
     def test_default_is_40(self):
         assert DEFAULT_SOCKET_WIDTH == 40
+
+    def test_no_info_detects_the_programmer(self, monkeypatch):
+        # Imported by name: minigecko.core re-exports identify(), so the
+        # function shadows the submodule attribute.
+        ident = importlib.import_module("minigecko.core.identify")
+        monkeypatch.setattr(
+            ident, "detect_programmer",
+            lambda: ProgrammerInfo(connected=True, hardware="T56"),
+        )
+        assert socket_width() == 48
 
 
 # ---------------------------------------------------------------------------
