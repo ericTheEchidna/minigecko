@@ -289,3 +289,18 @@ class TestProbeCarriers:
 
     def test_no_carriers_for_impossible_pin_count(self):
         assert probe_carriers(3) == []
+
+    def test_carrier_names_agree_with_the_requested_package(self):
+        from minigecko.core.identify import parse_package
+        for name in probe_carriers(28):
+            family, pins = parse_package(name.split("@", 1)[1]) if "@" in name else (None, None)
+            assert family in DIP_FAMILIES, name
+            assert pins == 28, name
+
+    def test_carrier_names_resolve_to_eligible_entries(self):
+        from minigecko.core.device_db import get_device
+        for name in probe_carriers(28)[:40]:
+            entry = get_device(name)
+            assert entry is not None, name
+            assert is_id_capable(entry), name
+            assert socket_pins(entry) == 28, name

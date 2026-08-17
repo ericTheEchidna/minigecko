@@ -185,8 +185,24 @@ def probe_carriers(pin_count: int) -> list[str]:
 
 
 def _addressable_name(entry: dict) -> str | None:
-    """First canonical name of *entry* that get_device() resolves back to it."""
-    for name in entry.get("canonical_names") or []:
-        if get_device(name) is entry:
+    """
+    A canonical name of *entry* that get_device() resolves back to it.
+
+    Preference goes to a name whose own "@PACKAGE" suffix agrees with the
+    entry's resolved family and pin count, because the name is what reaches
+    ``minipro -p`` and therefore decides which socket pins carry VCC and GND.
+    The first merely-resolving name is a last-resort fallback; for a carrier,
+    which has already passed the DIP and pin-count checks, it is unreachable.
+    """
+    resolving = [
+        name for name in entry.get("canonical_names") or [] if get_device(name) is entry
+    ]
+    pins = socket_pins(entry)
+
+    for name in resolving:
+        _, _, suffix = name.partition("@")
+        family, name_pins = parse_package(suffix)
+        if family in DIP_FAMILIES and name_pins == pins:
             return name
-    return None
+
+    return resolving[0] if resolving else None
