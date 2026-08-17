@@ -436,3 +436,80 @@ class TestTier0:
         from minigecko.core.device_db import get_device
         for cand in tier0_candidates(ChipHint(pin_count=28))[:60]:
             assert get_device(cand.name) is cand.entry, cand.name
+
+
+from minigecko.core.minipro import parse_bad_pins
+
+
+class TestParseBadPins:
+    _EMPTY_SOCKET = (
+        "Found TL866II+ 04.2.132 (0x284)\n"
+        "Bad contact on pin:1\n"
+        "Bad contact on pin:2\n"
+        "Bad contact on pin:27\n"
+    )
+
+    def test_extracts_pin_numbers(self):
+        assert parse_bad_pins(self._EMPTY_SOCKET) == [1, 2, 27]
+
+    def test_no_bad_pins(self):
+        assert parse_bad_pins("Found TL866II+ 04.2.132 (0x284)\n") == []
+
+    def test_ignores_banner_numbers(self):
+        assert parse_bad_pins("Found TL866II+ 04.2.132 (0x284)") == []
+
+    def test_deduplicates_and_sorts(self):
+        text = "Bad contact on pin:5\nBad contact on pin:2\nBad contact on pin:5\n"
+        assert parse_bad_pins(text) == [2, 5]
+
+    def test_empty_text(self):
+        assert parse_bad_pins("") == []
+
+
+class TestReadChipId:
+    def _with_transport(self, monkeypatch, result):
+        from minigecko.core import minipro as mp
+        monkeypatch.setattr(mp, "_run", lambda *a, **k: result)
+        return mp
+
+    def test_parses_mismatch_despite_nonzero_exit(self, monkeypatch):
+        from minigecko.core.minipro import MiniproResult
+        raw = MiniproResult(
+            ok=False,
+            returncode=1,
+            stderr=(
+                "Found TL866II+ 04.2.132 (0x284)\n\n"
+                "Chip ID mismatch: expected 0x0108, got 0xFFFF (unknown)\n"
+            ),
+        )
+        mp = self._with_transport(monkeypatch, raw)
+        result = mp.read_chip_id("AM2764A@DIP28")
+        assert result.data["chip_id"] == "0XFFFF"
+        assert result.data["expected_id"] == "0X0108"
+        assert result.data["matched"] is False
+
+    def test_lowercase_hex_is_upper_cased(self, monkeypatch):
+        from minigecko.core.minipro import MiniproResult
+        raw = MiniproResult(
+            ok=False,
+            returncode=1,
+            stderr="Chip ID mismatch: expected 0x01007e22, got 0x1c2013 (unknown)\n",
+        )
+        mp = self._with_transport(monkeypatch, raw)
+        assert mp.read_chip_id("X").data["chip_id"] == "0X1C2013"
+
+    def test_matched_case_when_exit_zero_and_no_mismatch_line(self, monkeypatch):
+        from minigecko.core.minipro import MiniproResult
+        raw = MiniproResult(ok=True, returncode=0, stderr="Found TL866II+ 04.2.132\n")
+        mp = self._with_transport(monkeypatch, raw)
+        data = mp.read_chip_id("X").data
+        assert data["matched"] is True
+        assert data["chip_id"] is None
+
+    def test_unparseable_failure_reports_neither(self, monkeypatch):
+        from minigecko.core.minipro import MiniproResult
+        raw = MiniproResult(ok=False, returncode=1, stderr="usb error\n")
+        mp = self._with_transport(monkeypatch, raw)
+        data = mp.read_chip_id("X").data
+        assert data["matched"] is False
+        assert data["chip_id"] is None
