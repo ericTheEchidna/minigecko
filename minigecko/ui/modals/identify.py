@@ -194,7 +194,8 @@ class IdentifyScreen(ModalScreen[str | None]):
             f"and reads the ID only — nothing is written or erased.\n\n"
             f"Align pin 1 towards the socket lever. If the chip is a different pin "
             f"count than {hint.pin_count}, power could land on a signal pin.\n\n"
-            f"Pin contact is checked first and the probe aborts if any pin is bad."
+            f"Pin contact is checked first and the probe only runs if that check "
+            f"confirms good contact."
             f"{adapter_note}"
         )
         self._show("id-step-confirm")
@@ -205,29 +206,37 @@ class IdentifyScreen(ModalScreen[str | None]):
         carriers = probe_carriers(hint.pin_count)
         carrier = carriers[0]
 
-        # Contact first, probe second — never the other way round.  Bad contact
-        # means either an empty socket or a misaligned chip, and neither is
-        # safe to energize.
+        # Contact first, probe second — never the other way round.  The gate is
+        # positive: only an affirmatively good check proceeds, so a check that
+        # could not run cannot be mistaken for a check that passed.
         contact = pin_check_device(carrier)
-        bad = (contact.data or {}).get("bad_pins") or []
-        if bad:
-            report = identify(hint)
-            # The supply pins are not contact-testable, so an empty socket flags
-            # every pin except those.
-            if len(bad) > hint.pin_count - 4:
-                report.diagnostics.insert(
-                    0, "Every testable pin reports bad contact — no chip inserted."
-                )
-            else:
-                pins = ", ".join(str(p) for p in bad)
-                report.diagnostics.insert(
-                    0,
-                    f"Bad contact on pin(s) {pins} — reseat the chip. Probe aborted.",
-                )
-            self._present(report)
+        if contact.ok:
+            self._present(identify(hint, probe=default_probe))
             return
 
-        self._present(identify(hint, probe=default_probe))
+        report = identify(hint)
+        bad = (contact.data or {}).get("bad_pins") or []
+        if not bad:
+            # -z is unavailable or errored, so the contact state is unknown.  For
+            # some device classes this is simply how minipro behaves.
+            report.diagnostics.insert(
+                0,
+                "Pin contact could not be verified, so nothing was energized: "
+                f"{contact.output}",
+            )
+        elif len(bad) > hint.pin_count - 4:
+            # The supply pins are not contact-testable, so an empty socket flags
+            # every pin except those.
+            report.diagnostics.insert(
+                0, "Every testable pin reports bad contact — no chip inserted."
+            )
+        else:
+            pins = ", ".join(str(p) for p in bad)
+            report.diagnostics.insert(
+                0,
+                f"Bad contact on pin(s) {pins} — reseat the chip. Probe aborted.",
+            )
+        self._present(report)
 
     # -- results ---------------------------------------------------------
 
