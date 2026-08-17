@@ -36,6 +36,7 @@ class MinigeckoApp(App):
     BINDINGS: ClassVar[list[Binding]] = [
         Binding("f", "file", "File"),
         Binding("s", "select_ic", "Select IC"),
+        Binding("i", "identify_ic", "Identify"),
         Binding("d", "ic_ops", "IC Ops"),
         Binding("v", "tools", "Tools"),
         Binding("h", "help", "Help"),
@@ -197,21 +198,33 @@ class MinigeckoApp(App):
         self._state["info_panel_height"] = int(panel.styles.height.value)  # type: ignore[union-attr]
         _save_state(self._state)
 
+    def _set_selected_ic(self, chip: str, verb: str) -> None:
+        self._selected_ic = chip
+        self.query_one("#btn-select-ic", Static).update(f"Selected IC: {chip}")
+        btn = self.query_one("#btn-ic-ops", Static)
+        btn.remove_class("tb-btn-disabled")
+        btn.add_class("tb-btn")
+        self.query_one(ICInfoPanel).show(chip)
+        self.log_action(f"[green]IC  {verb}[/]  {chip}")
+
     def _open_chip_select(self) -> None:
         def _on_selected(chip: str | None) -> None:
             if chip:
-                self._selected_ic = chip
-                self.query_one("#btn-select-ic", Static).update(f"Selected IC: {chip}")
-                btn = self.query_one("#btn-ic-ops", Static)
-                btn.remove_class("tb-btn-disabled")
-                btn.add_class("tb-btn")
-                self.query_one(ICInfoPanel).show(chip)
-                self.log_action(f"[green]IC  selected[/]  {chip}")
+                self._set_selected_ic(chip, "selected")
 
         self.push_screen(ChipSelectScreen(), _on_selected)
 
     def action_select_ic(self) -> None:
         self._open_chip_select()
+
+    def action_identify_ic(self) -> None:
+        from minigecko.ui.modals import IdentifyScreen
+
+        def _on_identified(chip: str | None) -> None:
+            if chip:
+                self._set_selected_ic(chip, "identified")
+
+        self.push_screen(IdentifyScreen(), _on_identified)
 
     def on_click(self, event) -> None:
         result = self.screen.get_widget_at(*event.screen_offset)
