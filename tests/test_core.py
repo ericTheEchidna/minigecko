@@ -12,7 +12,16 @@ Tests are split into two classes:
 import pytest
 
 from minigecko.core.identify import (
+    CONFIDENCE_ORDER,
     DIP_FAMILIES,
+    EVIDENCE_MARKING,
+    EVIDENCE_PACKAGE,
+    EVIDENCE_SILICON_ID,
+    Candidate,
+    ChipHint,
+    Evidence,
+    IdentifyReport,
+    NextStep,
     chip_id_index,
     is_id_capable,
     marking_matches,
@@ -248,6 +257,10 @@ class TestChipIdIndex:
     def test_index_is_cached(self):
         assert chip_id_index() is chip_id_index()
 
+    def test_index_is_read_only(self):
+        with pytest.raises(TypeError):
+            chip_id_index()["ZZZZ"] = ("nope",)
+
     def test_every_indexed_name_is_id_capable(self):
         index = chip_id_index()
         sample = [n for names in list(index.values())[:20] for n in names][:50]
@@ -304,3 +317,60 @@ class TestProbeCarriers:
             assert entry is not None, name
             assert is_id_capable(entry), name
             assert socket_pins(entry) == 28, name
+
+
+class TestChipHint:
+    def test_defaults(self):
+        hint = ChipHint(pin_count=28)
+        assert hint.via_adapter is False
+        assert hint.marking is None
+
+    def test_accepts_marking_and_adapter(self):
+        hint = ChipHint(pin_count=8, via_adapter=True, marking="25Q")
+        assert hint.marking == "25Q"
+        assert hint.via_adapter is True
+
+
+class TestConfidence:
+    def _cand(self, *kinds):
+        return Candidate(
+            name="X",
+            entry={},
+            evidence=[Evidence(kind=k, detail="d") for k in kinds],
+        )
+
+    def test_silicon_id_is_confirmed(self):
+        assert self._cand(EVIDENCE_SILICON_ID, EVIDENCE_PACKAGE).confidence == "confirmed"
+
+    def test_silicon_id_wins_over_marking(self):
+        cand = self._cand(EVIDENCE_SILICON_ID, EVIDENCE_MARKING)
+        assert cand.confidence == "confirmed"
+
+    def test_marking_without_silicon_is_probable(self):
+        assert self._cand(EVIDENCE_MARKING, EVIDENCE_PACKAGE).confidence == "probable"
+
+    def test_package_only_is_possible(self):
+        assert self._cand(EVIDENCE_PACKAGE).confidence == "possible"
+
+    def test_no_evidence_is_possible(self):
+        assert self._cand().confidence == "possible"
+
+    def test_confidence_order_ranks_confirmed_first(self):
+        assert CONFIDENCE_ORDER["confirmed"] < CONFIDENCE_ORDER["probable"]
+        assert CONFIDENCE_ORDER["probable"] < CONFIDENCE_ORDER["possible"]
+
+    def test_sort_key_orders_confirmed_before_possible(self):
+        confirmed = self._cand(EVIDENCE_SILICON_ID)
+        possible = self._cand(EVIDENCE_PACKAGE)
+        assert sorted([possible, confirmed], key=lambda c: c.sort_key)[0] is confirmed
+
+
+class TestReportModel:
+    def test_empty_report_defaults(self):
+        report = IdentifyReport(candidates=[], diagnostics=[], suggested_next=[])
+        assert report.observed_id is None
+        assert report.carrier is None
+
+    def test_next_step_defaults_to_unavailable(self):
+        step = NextStep(label="Logic sweep", estimate="~90 s", stage=2)
+        assert step.available is False

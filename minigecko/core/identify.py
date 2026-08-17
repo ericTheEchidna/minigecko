@@ -17,6 +17,7 @@ import fnmatch
 import logging
 import re
 from collections.abc import Mapping
+from dataclasses import dataclass, field
 from functools import lru_cache
 from types import MappingProxyType
 
@@ -214,3 +215,83 @@ def _addressable_name(entry: dict) -> str | None:
             return name
 
     return resolving[0] if resolving else None
+
+
+# ---------------------------------------------------------------------------
+# Data model
+# ---------------------------------------------------------------------------
+
+EVIDENCE_SILICON_ID = "silicon_id"
+EVIDENCE_MARKING = "marking"
+EVIDENCE_PACKAGE = "package"
+
+CONFIDENCE_ORDER = {"confirmed": 0, "probable": 1, "possible": 2}
+
+
+@dataclass(frozen=True)
+class ChipHint:
+    """What the user can see without powering anything."""
+
+    pin_count: int
+    via_adapter: bool = False
+    marking: str | None = None
+
+
+@dataclass(frozen=True)
+class Evidence:
+    """One reason a candidate is plausible, kept as data so the UI can show it."""
+
+    kind: str
+    detail: str
+
+
+@dataclass
+class Candidate:
+    """A device that could be the chip in the socket, plus why."""
+
+    name: str
+    entry: dict
+    evidence: list[Evidence] = field(default_factory=list)
+
+    @property
+    def confidence(self) -> str:
+        """
+        Derived from which evidence kinds are present.  Fixed three-way rule,
+        no numeric weights.
+        """
+        kinds = {e.kind for e in self.evidence}
+        if EVIDENCE_SILICON_ID in kinds:
+            return "confirmed"
+        if EVIDENCE_MARKING in kinds:
+            return "probable"
+        return "possible"
+
+    @property
+    def sort_key(self) -> tuple[int, str]:
+        return CONFIDENCE_ORDER[self.confidence], self.name
+
+    @property
+    def evidence_summary(self) -> str:
+        """Single-line human-readable joining of all evidence details."""
+        return " + ".join(e.detail for e in self.evidence)
+
+
+@dataclass
+class NextStep:
+    """A deeper identification pass this stage does not implement yet."""
+
+    label: str
+    estimate: str
+    stage: int
+    available: bool = False
+
+
+@dataclass
+class IdentifyReport:
+    """Result of an identification attempt.  "Couldn't tell" is a valid result."""
+
+    candidates: list[Candidate]
+    diagnostics: list[str]
+    suggested_next: list[NextStep]
+    observed_id: str | None = None
+    carrier: str | None = None
