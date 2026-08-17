@@ -13,10 +13,15 @@ import pytest
 
 from minigecko.core.identify import (
     DIP_FAMILIES,
+    chip_id_index,
+    is_id_capable,
     marking_matches,
+    normalize_chip_id,
     package_family,
     parse_package,
+    probe_carriers,
     socket_pins,
+    unique_entries,
 )
 from minigecko.core.logicdb import find_logic_ic, list_logic_ics, logicic_xml_path
 from minigecko.core.minipro import MiniproResult
@@ -199,3 +204,88 @@ class TestMarkingMatcher:
 
     def test_no_names_never_matches(self):
         assert marking_matches("74LS", []) is False
+
+
+# ---------------------------------------------------------------------------
+# Chip ID index and probe carriers
+# ---------------------------------------------------------------------------
+
+class TestChipIdNormalisation:
+    def test_strips_prefix_and_upper_cases(self):
+        assert normalize_chip_id("0x01007e22") == "1007E22"
+
+    def test_strips_leading_zeros(self):
+        assert normalize_chip_id("0x0108") == "108"
+
+    def test_bare_hex_without_prefix(self):
+        assert normalize_chip_id("108") == "108"
+
+    def test_all_zero_normalises_to_zero(self):
+        assert normalize_chip_id("0x00000000") == "0"
+
+    def test_whitespace_tolerated(self):
+        assert normalize_chip_id("  0X1C2013  ") == "1C2013"
+
+    def test_empty_string(self):
+        assert normalize_chip_id("") == ""
+
+    def test_widths_agree_after_normalising(self):
+        assert normalize_chip_id("0x0108") == normalize_chip_id("0x00000108")
+
+
+class TestChipIdIndex:
+    def test_index_is_not_empty(self):
+        assert len(chip_id_index()) > 100
+
+    def test_known_collision_is_a_group(self):
+        # 0x01007e22 is shared by 136 devices in minipro's catalogue.
+        names = chip_id_index()[normalize_chip_id("0x01007e22")]
+        assert len(names) > 50
+
+    def test_all_zero_id_absent(self):
+        assert normalize_chip_id("0x00000000") not in chip_id_index()
+
+    def test_index_is_cached(self):
+        assert chip_id_index() is chip_id_index()
+
+    def test_every_indexed_name_is_id_capable(self):
+        index = chip_id_index()
+        sample = [n for names in list(index.values())[:20] for n in names][:50]
+        from minigecko.core.device_db import get_device
+        for name in sample:
+            entry = get_device(name)
+            assert entry is not None
+            assert is_id_capable(entry)
+
+
+class TestUniqueEntries:
+    def test_fewer_than_name_keys(self):
+        from minigecko.core.device_db import get_db
+        assert len(unique_entries()) < len(get_db())
+
+    def test_no_duplicate_objects(self):
+        entries = unique_entries()
+        assert len({id(e) for e in entries}) == len(entries)
+
+
+class TestProbeCarriers:
+    def test_returns_carriers_for_dip28(self):
+        assert probe_carriers(28)
+
+    def test_carriers_match_pin_count_exactly(self):
+        from minigecko.core.device_db import get_device
+        for name in probe_carriers(28)[:20]:
+            assert socket_pins(get_device(name)) == 28
+
+    def test_carriers_are_dip(self):
+        from minigecko.core.device_db import get_device
+        for name in probe_carriers(28)[:20]:
+            assert package_family(get_device(name)) in DIP_FAMILIES
+
+    def test_carriers_are_id_capable(self):
+        from minigecko.core.device_db import get_device
+        for name in probe_carriers(28)[:20]:
+            assert is_id_capable(get_device(name))
+
+    def test_no_carriers_for_impossible_pin_count(self):
+        assert probe_carriers(3) == []

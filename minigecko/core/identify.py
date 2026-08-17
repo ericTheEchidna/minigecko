@@ -16,6 +16,9 @@ from __future__ import annotations
 import fnmatch
 import logging
 import re
+from functools import lru_cache
+
+from minigecko.core.device_db import decode_flags, get_db, get_device
 
 logger = logging.getLogger(__name__)
 
@@ -91,3 +94,99 @@ def marking_matches(marking: str, names: list[str]) -> bool:
         pattern = pattern + "*"
 
     return any(fnmatch.fnmatchcase((name or "").upper(), pattern) for name in names)
+
+
+def normalize_chip_id(raw: str) -> str:
+    """
+    Reduce a chip ID to comparable form: no "0x", upper case, no leading zeros.
+
+    device_db stores 8 hex digits ("0x01007e22") while minipro reports 4 for
+    some parts ("0x0108"), so raw string comparison fails.  An all-zero ID
+    normalises to "0".
+    """
+    text = (raw or "").strip().upper()
+    if text.startswith("0X"):
+        text = text[2:]
+    if not text:
+        return ""
+    return text.lstrip("0") or "0"
+
+
+def is_id_capable(entry: dict) -> bool:
+    """True when the device's hardware flags advertise chip ID support."""
+    return any(
+        label == "Chip ID" and bool(value)
+        for _key, label, value in decode_flags(entry)
+    )
+
+
+@lru_cache(maxsize=1)
+def unique_entries() -> tuple[dict, ...]:
+    """
+    Every distinct device_db entry, once.
+
+    get_db() maps each name variant to a shared entry dict, so iterating its
+    values yields the same object many times.
+    """
+    return tuple({id(v): v for v in get_db().values()}.values())
+
+
+@lru_cache(maxsize=1)
+def chip_id_index() -> dict[str, list[str]]:
+    """
+    Reverse index: normalised chip ID -> device names carrying that ID.
+
+    IDs are deliberately non-unique (0x01007e22 is shared by 136 devices), so
+    values are lists.  Entries without the has_chip_id flag, and the all-zero
+    placeholder ID, are excluded.
+    """
+    index: dict[str, list[str]] = {}
+    zero = normalize_chip_id("0x00000000")
+
+    for entry in unique_entries():
+        if not is_id_capable(entry):
+            continue
+        key = normalize_chip_id(entry.get("chip_id", ""))
+        if not key or key == zero:
+            continue
+        for name in entry.get("canonical_names", []):
+            index.setdefault(key, []).append(name)
+
+    logger.debug("chip_id_index: %d distinct IDs", len(index))
+    return index
+
+
+def probe_carriers(pin_count: int) -> list[str]:
+    """
+    Devices usable as an electrical harness for an ID read at *pin_count* pins.
+
+    Eligibility is deliberately strict: an exact pin-count match (the proxy for
+    "VCC and GND land on the same socket pins"), a DIP package (a carrier
+    defines the socket wiring), chip-ID capability, and not an ISP entry.
+    Mismatches are excluded, never merely ranked lower.  A carrier is reported
+    under a name that get_device() resolves back to the entry that passed those
+    checks; some names are shared by several entries, so the first canonical
+    name is not always such a name.
+    """
+    carriers: list[str] = []
+    for entry in unique_entries():
+        if entry.get("is_isp"):
+            continue
+        if socket_pins(entry) != pin_count:
+            continue
+        if package_family(entry) not in DIP_FAMILIES:
+            continue
+        if not is_id_capable(entry):
+            continue
+        name = _addressable_name(entry)
+        if name:
+            carriers.append(name)
+    return sorted(carriers)
+
+
+def _addressable_name(entry: dict) -> str | None:
+    """First canonical name of *entry* that get_device() resolves back to it."""
+    for name in entry.get("canonical_names") or []:
+        if get_device(name) is entry:
+            return name
+    return None
