@@ -137,7 +137,7 @@ class IdentifyScreen(ModalScreen[str | None]):
         if hint is not None:
             self._count_candidates(hint)
 
-    @work(thread=True, exclusive=True)
+    @work(thread=True, exclusive=True, group="count")
     def _count_candidates(self, hint: ChipHint) -> None:
         # Tier 0 only: no probe argument, so this live count never energizes the
         # socket.  Threaded and exclusive because adapter mode costs ~0.27 s per

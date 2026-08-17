@@ -35,7 +35,7 @@ CONFIRMING_ID = "0x00000110"
 
 # What an empty 28-pin socket really reports: every pin except the two that are
 # not contact-testable.
-ALL_TESTABLE_PINS_BAD = [pin for pin in range(1, 29) if pin not in (14, 28)]
+ALL_TESTABLE_PINS_BAD = [pin for pin in range(1, 29) if pin not in (14, 26)]
 
 _UNSET = object()
 

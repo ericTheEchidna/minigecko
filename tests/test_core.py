@@ -269,14 +269,24 @@ class TestChipIdIndex:
         with pytest.raises(TypeError):
             chip_id_index()["ZZZZ"] = ("nope",)
 
-    def test_every_indexed_name_is_id_capable(self):
-        index = chip_id_index()
-        sample = [n for names in list(index.values())[:20] for n in names][:50]
+    def test_indexed_names_are_id_capable_except_known_shadowed(self):
+        # device_db name keys are not unique, so a handful of indexed names
+        # resolve to a non-ID-capable entry (MINIGECKO-008).  Closing that
+        # should empty this set and turn this test red, which is the point:
+        # it is the regression net for the fix.
+        KNOWN_SHADOWED = {"27C256@DIP28", "27C256@PLCC32"}
+
         from minigecko.core.device_db import get_device
-        for name in sample:
-            entry = get_device(name)
-            assert entry is not None
-            assert is_id_capable(entry)
+
+        shadowed = set()
+        for names in chip_id_index().values():
+            for name in names:
+                entry = get_device(name)
+                assert entry is not None
+                if not is_id_capable(entry):
+                    shadowed.add(name)
+
+        assert shadowed == KNOWN_SHADOWED
 
 
 class TestUniqueEntries:
