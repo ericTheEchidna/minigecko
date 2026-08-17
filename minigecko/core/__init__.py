@@ -2,6 +2,10 @@
 minigecko.core
 ~~~~~~~~~~
 Hardware abstraction layer.  Import from here, not from submodules.
+
+Note: the re-exported ``identify`` function shadows the ``identify`` submodule
+attribute, so ``from minigecko.core import identify`` binds the function; use
+``from minigecko.core.identify import ...`` to reach the submodule.
 """
 
 from .device_db import (
@@ -13,10 +17,12 @@ from .identify import (
     ChipHint,
     Evidence,
     IdentifyReport,
+    MUTE_IDS,
     NextStep,
     default_probe,
     identify,
     socket_width,
+    suggested_next_steps,
 )
 from .minipro import (
     ChipDevice,
@@ -47,6 +53,7 @@ __all__ = [
     "ChipHint",
     "Evidence",
     "IdentifyReport",
+    "MUTE_IDS",
     "MiniproResult",
     "NextStep",
     "ProgrammerInfo",
@@ -74,6 +81,7 @@ __all__ = [
     "read_pin",
     "set_binary_path",
     "socket_width",
+    "suggested_next_steps",
     "verify_device",
     "write_device",
     "write_pins",

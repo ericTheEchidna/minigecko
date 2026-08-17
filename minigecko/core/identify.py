@@ -295,6 +295,9 @@ class IdentifyReport:
     candidates: list[Candidate]
     diagnostics: list[str]
     suggested_next: list[NextStep]
+    # In the matched case this is catalogue-sourced — the carrier entry's own
+    # chip_id — because a matched read returns no ID string of its own.  It is
+    # not necessarily an ID any read reported, so do not label it as one.
     observed_id: str | None = None
     carrier: str | None = None
 
