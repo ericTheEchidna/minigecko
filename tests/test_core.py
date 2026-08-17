@@ -30,6 +30,7 @@ from minigecko.core.identify import (
     parse_package,
     probe_carriers,
     socket_pins,
+    tier0_candidates,
     unique_entries,
 )
 from minigecko.core.logicdb import find_logic_ic, list_logic_ics, logicic_xml_path
@@ -374,3 +375,65 @@ class TestReportModel:
     def test_next_step_defaults_to_unavailable(self):
         step = NextStep(label="Logic sweep", estimate="~90 s", stage=2)
         assert step.available is False
+
+
+class TestTier0:
+    def test_returns_candidates_for_dip28(self):
+        assert tier0_candidates(ChipHint(pin_count=28))
+
+    def test_all_candidates_match_pin_count(self):
+        for cand in tier0_candidates(ChipHint(pin_count=28)):
+            assert socket_pins(cand.entry) == 28
+
+    def test_direct_mode_excludes_non_dip_packages(self):
+        for cand in tier0_candidates(ChipHint(pin_count=8)):
+            family = package_family(cand.entry)
+            assert family is None or family in DIP_FAMILIES
+
+    def test_adapter_mode_widens_the_pool(self):
+        direct = tier0_candidates(ChipHint(pin_count=8))
+        adapter = tier0_candidates(ChipHint(pin_count=8, via_adapter=True))
+        assert len(adapter) > len(direct)
+
+    def test_adapter_mode_includes_non_dip(self):
+        families = {
+            package_family(c.entry)
+            for c in tier0_candidates(ChipHint(pin_count=8, via_adapter=True))
+        }
+        assert families - DIP_FAMILIES - {None}
+
+    def test_unknown_package_entries_survive_direct_mode(self):
+        # Logic ICs have empty package strings; they must not be filtered out.
+        names = {c.name for c in tier0_candidates(ChipHint(pin_count=14))}
+        assert "4001" in names
+
+    def test_marking_narrows_results(self):
+        wide = tier0_candidates(ChipHint(pin_count=28))
+        narrow = tier0_candidates(ChipHint(pin_count=28, marking="2764"))
+        assert 0 < len(narrow) < len(wide)
+
+    def test_marking_candidates_carry_marking_evidence(self):
+        cands = tier0_candidates(ChipHint(pin_count=28, marking="2764"))
+        assert cands
+        for cand in cands:
+            kinds = {e.kind for e in cand.evidence}
+            assert EVIDENCE_MARKING in kinds
+
+    def test_no_marking_yields_package_evidence_only(self):
+        for cand in tier0_candidates(ChipHint(pin_count=28))[:20]:
+            assert {e.kind for e in cand.evidence} == {EVIDENCE_PACKAGE}
+
+    def test_impossible_pin_count_returns_empty(self):
+        assert tier0_candidates(ChipHint(pin_count=3)) == []
+
+    def test_unmatchable_marking_returns_empty(self):
+        assert tier0_candidates(ChipHint(pin_count=28, marking="ZZZQQQ")) == []
+
+    def test_results_are_sorted_by_confidence_then_name(self):
+        cands = tier0_candidates(ChipHint(pin_count=28))
+        assert [c.sort_key for c in cands] == sorted(c.sort_key for c in cands)
+
+    def test_candidate_names_resolve_to_their_own_entry(self):
+        from minigecko.core.device_db import get_device
+        for cand in tier0_candidates(ChipHint(pin_count=28))[:60]:
+            assert get_device(cand.name) is cand.entry, cand.name

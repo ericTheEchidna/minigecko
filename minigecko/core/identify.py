@@ -187,31 +187,34 @@ def probe_carriers(pin_count: int) -> list[str]:
             continue
         if not is_id_capable(entry):
             continue
-        name = _addressable_name(entry)
+        name = addressable_name(entry)
         if name:
             carriers.append(name)
     return sorted(carriers)
 
 
-def _addressable_name(entry: dict) -> str | None:
+def addressable_name(entry: dict) -> str | None:
     """
     A canonical name of *entry* that get_device() resolves back to it.
 
     Preference goes to a name whose own "@PACKAGE" suffix agrees with the
     entry's resolved family and pin count, because the name is what reaches
     ``minipro -p`` and therefore decides which socket pins carry VCC and GND.
-    The first merely-resolving name is a last-resort fallback; for a carrier,
-    which has already passed the DIP and pin-count checks, it is unreachable.
+    Agreement is with the entry's *own* package, so a SOIC-8 entry keeps a
+    SOIC-8 name.  The first merely-resolving name is a last-resort fallback;
+    for a carrier, which has already passed the DIP and pin-count checks, it is
+    unreachable.
     """
     resolving = [
         name for name in entry.get("canonical_names") or [] if get_device(name) is entry
     ]
+    entry_family = package_family(entry)
     pins = socket_pins(entry)
 
     for name in resolving:
         _, _, suffix = name.partition("@")
         family, name_pins = parse_package(suffix)
-        if family in DIP_FAMILIES and name_pins == pins:
+        if family is not None and family == entry_family and name_pins == pins:
             return name
 
     return resolving[0] if resolving else None
@@ -295,3 +298,69 @@ class IdentifyReport:
     suggested_next: list[NextStep]
     observed_id: str | None = None
     carrier: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# Tier 0 — catalogue filter, no hardware
+# ---------------------------------------------------------------------------
+
+def _seats_in_socket(entry: dict, hint: ChipHint) -> bool:
+    """
+    True when *entry* could physically be the chip the user describes.
+
+    An empty package string means the package is unknown, not that it is
+    non-DIP — 259 of 261 logic IC entries are in that group — so unknown
+    packages stay eligible in both direct and adapter mode.
+    """
+    if socket_pins(entry) != hint.pin_count:
+        return False
+    family = package_family(entry)
+    if family is None or family in DIP_FAMILIES:
+        return True
+    return hint.via_adapter
+
+
+def tier0_candidates(hint: ChipHint) -> list[Candidate]:
+    """
+    Filter the catalogue on what the user can see.  Touches no hardware.
+
+    Every surviving entry gets package evidence; those matched by a marking
+    fragment additionally get marking evidence, which lifts them to
+    "probable".
+    """
+    marking = (hint.marking or "").strip()
+    presentation = "via adapter" if hint.via_adapter else "direct"
+    candidates: list[Candidate] = []
+
+    for entry in unique_entries():
+        if not _seats_in_socket(entry, hint):
+            continue
+
+        names = entry.get("canonical_names") or []
+        if not names:
+            continue
+
+        if marking and not marking_matches(marking, names):
+            continue
+
+        # NOT names[0]: a name can be claimed by another entry, and the name is
+        # what later minipro operations are built from.
+        name = addressable_name(entry)
+        if name is None:
+            continue
+
+        evidence = [
+            Evidence(
+                kind=EVIDENCE_PACKAGE,
+                detail=f"{hint.pin_count}-pin {presentation}",
+            )
+        ]
+        if marking:
+            evidence.append(
+                Evidence(kind=EVIDENCE_MARKING, detail=f"marking matches {marking!r}")
+            )
+
+        candidates.append(Candidate(name=name, entry=entry, evidence=evidence))
+
+    candidates.sort(key=lambda c: c.sort_key)
+    return candidates
