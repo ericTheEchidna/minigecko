@@ -513,3 +513,22 @@ class TestReadChipId:
         data = mp.read_chip_id("X").data
         assert data["matched"] is False
         assert data["chip_id"] is None
+
+    def test_transport_failure_is_not_a_match(self, monkeypatch):
+        from minigecko.core.minipro import MiniproResult
+        raw = MiniproResult(ok=False, stderr="minipro not found. Install it from ...")
+        mp = self._with_transport(monkeypatch, raw)
+        data = mp.read_chip_id("X").data
+        assert data["matched"] is False
+        assert data["chip_id"] is None
+
+    def test_read_chip_id_invokes_only_the_read_id_verb(self, monkeypatch):
+        from minigecko.core import minipro as mp
+        from minigecko.core.minipro import MiniproResult
+        seen = []
+        monkeypatch.setattr(
+            mp, "_run",
+            lambda args, *a, **k: seen.append(args) or MiniproResult(ok=True, returncode=0),
+        )
+        mp.read_chip_id("AM2764A@DIP28")
+        assert seen == [["-p", "AM2764A@DIP28", "-D"]]
