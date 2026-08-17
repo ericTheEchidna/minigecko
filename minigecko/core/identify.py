@@ -346,6 +346,7 @@ def tier0_candidates(hint: ChipHint) -> list[Candidate]:
         # what later minipro operations are built from.
         name = addressable_name(entry)
         if name is None:
+            logger.debug("tier0_candidates: no addressable name for %s", names)
             continue
 
         evidence = [

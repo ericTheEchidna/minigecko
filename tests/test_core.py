@@ -408,6 +408,10 @@ class TestTier0:
         names = {c.name for c in tier0_candidates(ChipHint(pin_count=14))}
         assert "4001" in names
 
+    def test_unknown_package_entries_survive_adapter_mode(self):
+        names = {c.name for c in tier0_candidates(ChipHint(pin_count=14, via_adapter=True))}
+        assert "4001" in names
+
     def test_marking_narrows_results(self):
         wide = tier0_candidates(ChipHint(pin_count=28))
         narrow = tier0_candidates(ChipHint(pin_count=28, marking="2764"))
