@@ -25,6 +25,7 @@ from functools import lru_cache
 from types import MappingProxyType
 
 from minigecko.core.device_db import decode_flags, get_db, get_device
+from minigecko.core.minipro import ProgrammerInfo, detect_programmer
 
 logger = logging.getLogger(__name__)
 
@@ -362,3 +363,32 @@ def tier0_candidates(hint: ChipHint) -> list[Candidate]:
 
     candidates.sort(key=lambda c: c.sort_key)
     return candidates
+
+
+# ---------------------------------------------------------------------------
+# Socket geometry
+# ---------------------------------------------------------------------------
+
+DEFAULT_SOCKET_WIDTH = 40
+
+_SOCKET_WIDTHS = {
+    "TL866A": 40,
+    "TL866CS": 40,
+    "TL866II+": 40,
+    "T48": 40,
+    "T56": 48,
+}
+
+
+def socket_width(info: ProgrammerInfo | None = None) -> int:
+    """
+    Physical pin width of the attached programmer's ZIF socket.
+
+    Falls back to 40 for unknown or absent hardware, which can only
+    under-offer pin counts rather than over-offer them.
+    """
+    if info is None:
+        info = detect_programmer()
+    if not info.connected:
+        return DEFAULT_SOCKET_WIDTH
+    return _SOCKET_WIDTHS.get(info.hardware, DEFAULT_SOCKET_WIDTH)

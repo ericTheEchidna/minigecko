@@ -12,6 +12,7 @@ import pytest
 
 from minigecko.core.identify import (
     CONFIDENCE_ORDER,
+    DEFAULT_SOCKET_WIDTH,
     DIP_FAMILIES,
     EVIDENCE_MARKING,
     EVIDENCE_PACKAGE,
@@ -29,11 +30,12 @@ from minigecko.core.identify import (
     parse_package,
     probe_carriers,
     socket_pins,
+    socket_width,
     tier0_candidates,
     unique_entries,
 )
 from minigecko.core.logicdb import find_logic_ic, list_logic_ics, logicic_xml_path
-from minigecko.core.minipro import MiniproResult
+from minigecko.core.minipro import MiniproResult, ProgrammerInfo
 
 
 # ---------------------------------------------------------------------------
@@ -532,3 +534,26 @@ class TestReadChipId:
         )
         mp.read_chip_id("AM2764A@DIP28")
         assert seen == [["-p", "AM2764A@DIP28", "-D"]]
+# ---------------------------------------------------------------------------
+# Socket width
+# ---------------------------------------------------------------------------
+
+class TestSocketWidth:
+    def test_tl866ii_plus_is_40(self):
+        assert socket_width(ProgrammerInfo(connected=True, hardware="TL866II+")) == 40
+
+    def test_t48_is_40(self):
+        assert socket_width(ProgrammerInfo(connected=True, hardware="T48")) == 40
+
+    def test_t56_is_48(self):
+        assert socket_width(ProgrammerInfo(connected=True, hardware="T56")) == 48
+
+    def test_unknown_model_falls_back(self):
+        got = socket_width(ProgrammerInfo(connected=True, hardware="MysteryBox9000"))
+        assert got == DEFAULT_SOCKET_WIDTH
+
+    def test_not_connected_falls_back(self):
+        assert socket_width(ProgrammerInfo(connected=False)) == DEFAULT_SOCKET_WIDTH
+
+    def test_default_is_40(self):
+        assert DEFAULT_SOCKET_WIDTH == 40
