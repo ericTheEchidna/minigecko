@@ -13,6 +13,7 @@ probe callable is passed in.
 
 from __future__ import annotations
 
+import fnmatch
 import logging
 import re
 
@@ -63,3 +64,22 @@ def socket_pins(entry: dict) -> int | None:
     if _MIN_PINS <= raw <= _MAX_PINS and raw % 2 == 0:
         return int(raw)
     return None
+
+
+def marking_matches(marking: str, names: list[str]) -> bool:
+    """
+    Test a surviving-marking fragment against a device's names.
+
+    Syntax is shell-glob and case-insensitive: ``?`` matches one character,
+    ``*`` matches any run.  A fragment with no wildcards is treated as a
+    substring match, so "74LS" matches "SN74LS00" the way a user expects.
+    An empty or whitespace-only fragment matches everything.
+    """
+    pattern = (marking or "").strip().upper()
+    if not pattern:
+        return True
+
+    if "*" not in pattern and "?" not in pattern:
+        return any(pattern in (name or "").upper() for name in names)
+
+    return any(fnmatch.fnmatchcase((name or "").upper(), pattern) for name in names)

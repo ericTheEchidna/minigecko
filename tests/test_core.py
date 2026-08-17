@@ -13,6 +13,7 @@ import pytest
 
 from minigecko.core.identify import (
     DIP_FAMILIES,
+    marking_matches,
     package_family,
     parse_package,
     socket_pins,
@@ -156,3 +157,39 @@ class TestSocketPins:
 
     def test_package_family_reads_package(self):
         assert package_family({"package": "SOIC8"}) == "SOIC"
+
+
+# ---------------------------------------------------------------------------
+# Marking fragment matcher (identify)
+# ---------------------------------------------------------------------------
+
+class TestMarkingMatcher:
+    def test_bare_fragment_is_substring(self):
+        assert marking_matches("74LS", ["SN74LS00"]) is True
+
+    def test_bare_fragment_no_match(self):
+        assert marking_matches("74LS", ["AM2764A"]) is False
+
+    def test_case_insensitive(self):
+        assert marking_matches("74ls", ["SN74LS00"]) is True
+
+    def test_question_mark_matches_one_char(self):
+        assert marking_matches("74??00", ["74LS00"]) is True
+
+    def test_question_mark_requires_exact_length(self):
+        assert marking_matches("74?00", ["74LS00"]) is False
+
+    def test_star_matches_run(self):
+        assert marking_matches("27*256", ["27C256"]) is True
+
+    def test_matches_any_of_several_names(self):
+        assert marking_matches("2764", ["AM2764A", "MBM2764"]) is True
+
+    def test_empty_marking_matches_everything(self):
+        assert marking_matches("", ["ANYTHING"]) is True
+
+    def test_whitespace_only_marking_matches_everything(self):
+        assert marking_matches("   ", ["ANYTHING"]) is True
+
+    def test_no_names_never_matches(self):
+        assert marking_matches("74LS", []) is False
