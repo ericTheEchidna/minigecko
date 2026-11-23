@@ -27,6 +27,7 @@ from minigecko.core.identify import (
     NextStep,
     chip_id_index,
     default_probe,
+    id_read_voltage_note,
     identify,
     is_id_capable,
     marking_matches,
@@ -434,6 +435,19 @@ class TestUniqueEntries:
 class TestProbeCarriers:
     def test_returns_carriers_for_dip28(self):
         assert probe_carriers(28)
+
+    @pytest.mark.parametrize("pins", [28, 32, 40])
+    def test_first_carrier_at_memory_widths_reads_id_the_eprom_way(self, pins):
+        # Bench 2026-11-23 (MINIGECKO-00B): the 27-series ID read raises A9 to
+        # ~12 V.  That is kept on purpose; the warning must say so.
+        note = id_read_voltage_note(probe_carriers(pins)[0])
+        assert "A9" in note and "12 V" in note
+        assert "SRAM" in note
+
+    def test_other_carriers_warn_without_claiming_a9(self):
+        note = id_read_voltage_note(probe_carriers(14)[0])  # an AVR
+        assert "A9" not in note
+        assert "above VCC" in note and "SRAM" in note
 
     def test_carriers_match_pin_count_exactly(self):
         from minigecko.core.device_db import get_device

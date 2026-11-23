@@ -14,6 +14,7 @@ from minigecko.core.identify import (
     ChipHint,
     IdentifyReport,
     default_probe,
+    id_read_voltage_note,
     identify,
     probe_carriers,
     socket_width,
@@ -254,6 +255,7 @@ class IdentifyScreen(ModalScreen[str | None]):
             f"The socket will be energized using that profile's own pin "
             f"assignment. MiniGecko issues only minipro's read-ID command — "
             f"never a write or an erase.\n\n"
+            f"{id_read_voltage_note(carrier)}\n\n"
             f"Align pin 1 towards the socket lever. If the chip is not "
             f"{hint.pin_count} pins, power may land on a signal pin.\n\n"
             f"Pin contact is checked first, and the probe is abandoned unless "

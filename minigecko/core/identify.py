@@ -202,7 +202,31 @@ def probe_carriers(pin_count: int) -> list[str]:
         name = addressable_name(entry)
         if name:
             carriers.append(name)
+    # Alphabetical order puts a 27-series EPROM first at 28, 32 and 40 pins.
+    # Its ID read raises A9 to ~12 V (bench, 2026-11-23, MINIGECKO-00B).  That
+    # is kept on purpose: the logic-level alternative at these widths is a
+    # flash "software ID", which is a sequence of write cycles and can alter an
+    # unknown EEPROM.  27C EPROMs and 28C EEPROMs, the usual subjects, are built
+    # for A9 at 12 V; the consent step warns off SRAM and logic chips instead
+    # (id_read_voltage_note).
     return sorted(carriers)
+
+
+# minipro protocol IDs of 27-series EPROM profiles (27xx at 28, 27C0x0 at 32,
+# 27C2x0 at 40 pins): their ID read is the EPROM signature read, A9 at ~12 V.
+EPROM_SIGNATURE_PROTOCOLS = frozenset({"0x07", "0x08", "0x09"})
+
+
+def id_read_voltage_note(carrier: str) -> str:
+    """What reading the chip ID through *carrier* does electrically, for consent."""
+    entry = get_device(carrier) or {}
+    if entry.get("protocol_id", "").lower() in EPROM_SIGNATURE_PROTOCOLS:
+        how = ("This profile reads the ID the EPROM way: it raises A9 to about "
+               "12 V. EPROMs and 28C EEPROMs are built for this.")
+    else:
+        how = ("This profile may raise one pin above VCC to read the ID, as "
+               "programming modes do.")
+    return f"{how} SRAM and logic chips are not: do not probe one this way."
 
 
 def addressable_name(entry: dict) -> str | None:
