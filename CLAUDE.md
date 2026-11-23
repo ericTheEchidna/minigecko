@@ -14,6 +14,8 @@
 
 ## Task Workflow
 
+Tasks live in MEMEX, not in this repo: `memex_list_tasks(project="minigecko")`. There is no TASKS.md.
+
 ```bash
 # List open tasks
 curl 'http://miso:8002/tasks?project=minigecko&status=open'
