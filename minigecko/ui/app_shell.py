@@ -134,6 +134,9 @@ class MinigeckoApp(App):
         emulated = is_emulated()
         info = detect_programmer()
         if info.connected:
+            from minigecko.core.device_db import use_programmer
+
+            use_programmer(info.hardware)
             hw = info.hardware or "TL866II+"
             fw = info.firmware
             if emulated:

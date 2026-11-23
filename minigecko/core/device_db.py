@@ -3,6 +3,10 @@ minigecko.core.device_db
 ~~~~~~~~~~~~~~~~~~~~
 Parses minipro's infoic.xml and logicic.xml into an in-memory lookup dict.
 Loaded once at first access; all public access goes through get_db().
+
+infoic.xml has one section per programmer family.  The section for the
+TL866II+/T48/T56 is used until ``use_programmer`` names another, which drops
+the cache and runs every ``on_reload`` hook.
 """
 
 from __future__ import annotations
@@ -11,9 +15,14 @@ import logging
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing import Callable
 from urllib.parse import quote
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_SECTION = "INFOIC2PLUS"
+"""infoic.xml section for TL866II+, T48 and T56: minipro's default, and the
+one used until a programmer is detected."""
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -181,15 +190,32 @@ def _parse_xml_root(path: Path) -> ET.Element | None:
         return None
 
 
-def _parse_infoic(path: Path) -> dict[str, dict]:
+def _select_section(root: ET.Element, section: str, path: Path) -> ET.Element:
+    """Return the ``<database type=section>`` element of an infoic catalogue.
+
+    infoic.xml holds one section per programmer family, T76 first, so taking
+    the first ``<database>`` silently means T76 profiles for every programmer.
+    """
+    database = root.find(f"database[@type='{section}']")
+    if database is not None:
+        return database
+    first = root.find("database")
+    if first is None:
+        return root  # some versions flatten the hierarchy
+    logger.warning(
+        "No %s section in %s; using %s instead",
+        section, path, first.attrib.get("type", "the first section"),
+    )
+    return first
+
+
+def _parse_infoic(path: Path, section: str = DEFAULT_SECTION) -> dict[str, dict]:
     db: dict[str, dict] = {}
     root = _parse_xml_root(path)
     if root is None:
         return db
 
-    database = root.find("database")
-    if database is None:
-        database = root  # some versions flatten the hierarchy
+    database = _select_section(root, section, path)
 
     for manufacturer in database:
         mfr_name = manufacturer.attrib.get("name", "")
@@ -287,7 +313,8 @@ def _build_db() -> dict[str, dict]:
     db: dict[str, dict] = {}
 
     if INFOIC_XML.exists():
-        db.update(_parse_infoic(INFOIC_XML))
+        logger.info("Loading infoic.xml section %s (%s)", _section, _section_reason)
+        db.update(_parse_infoic(INFOIC_XML, _section))
     if LOGICIC_XML.exists():
         # logicic entries are type 5; don't overwrite an existing infoic entry
         for name, entry in _parse_logicic(LOGICIC_XML).items():
@@ -301,6 +328,45 @@ def _build_db() -> dict[str, dict]:
 # ---------------------------------------------------------------------------
 
 _DB: dict[str, dict] | None = None
+_section: str = DEFAULT_SECTION
+_section_reason: str = "default until a programmer is detected"
+_reload_hooks: list[Callable[[], None]] = []
+
+
+def section_for_programmer(hardware: str) -> str:
+    """infoic.xml section minipro uses for *hardware* (its ``translate_db``)."""
+    if hardware in ("TL866A", "TL866CS"):
+        return "INFOIC"
+    if hardware == "T76":
+        return "INFOICT76"
+    return "INFOIC2PLUS"
+
+
+def on_reload(hook: Callable[[], None]) -> None:
+    """Register *hook* to drop caches derived from the catalogue on reload."""
+    _reload_hooks.append(hook)
+
+
+def use_programmer(hardware: str) -> bool:
+    """Switch to the catalogue section for *hardware*.
+
+    Returns True when the section changed: the catalogue is then rebuilt on
+    next access and every ``on_reload`` hook has run.
+    """
+    global _DB, _section, _section_reason
+    section = section_for_programmer(hardware)
+    _section_reason = f"programmer {hardware or 'unknown'} detected"
+    if section == _section:
+        logger.info("Programmer %s uses infoic.xml section %s, already loaded",
+                    hardware or "unknown", section)
+        return False
+    logger.info("Programmer %s uses infoic.xml section %s (was %s)",
+                hardware or "unknown", section, _section)
+    _section = section
+    _DB = None
+    for hook in _reload_hooks:
+        hook()
+    return True
 
 
 def get_db() -> dict[str, dict]:

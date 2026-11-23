@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 from types import MappingProxyType
 
-from minigecko.core.device_db import decode_flags, get_db, get_device
+from minigecko.core.device_db import decode_flags, get_db, get_device, on_reload
 from minigecko.core.minipro import ProgrammerInfo, detect_programmer, read_chip_id
 
 logger = logging.getLogger(__name__)
@@ -167,6 +167,14 @@ def chip_id_index() -> Mapping[str, tuple[str, ...]]:
     return MappingProxyType(
         {key: tuple(dict.fromkeys(names)) for key, names in index.items()}
     )
+
+
+def _clear_catalogue_caches() -> None:
+    unique_entries.cache_clear()
+    chip_id_index.cache_clear()
+
+
+on_reload(_clear_catalogue_caches)
 
 
 def probe_carriers(pin_count: int) -> list[str]:

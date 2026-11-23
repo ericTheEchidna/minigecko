@@ -108,6 +108,81 @@ class TestDeviceDbParsing:
         path.write_text(_INFOIC_WITH_BAD_COMMENT)
         assert "27C256@DIP28" in _parse_infoic(path)
 
+    def _write_sections(self, tmp_path, types=("INFOICT76", "INFOIC2PLUS", "INFOIC")):
+        # Same name in every section, with a per-section chip ID, so a test can
+        # tell which section an entry came from.
+        sections = "".join(
+            f'<database type="{t}"><manufacturer name="M">'
+            f'<ic name="27C256@DIP28" type="1" chip_id="0x{i + 1:02X}" flags="0x0"/>'
+            f"</manufacturer></database>"
+            for i, t in enumerate(types)
+        )
+        path = tmp_path / "infoic.xml"
+        path.write_text(f"<infoic>{sections}</infoic>")
+        return path
+
+    def test_default_section_is_tl866ii_plus_not_the_first(self, tmp_path):
+        from minigecko.core.device_db import _parse_infoic
+
+        db = _parse_infoic(self._write_sections(tmp_path))
+        assert db["27C256@DIP28"]["chip_id"] == "0x02"  # INFOIC2PLUS, not INFOICT76
+
+    @pytest.mark.parametrize("section, chip_id", [
+        ("INFOICT76", "0x01"), ("INFOIC2PLUS", "0x02"), ("INFOIC", "0x03"),
+    ])
+    def test_selects_the_named_section(self, tmp_path, section, chip_id):
+        from minigecko.core.device_db import _parse_infoic
+
+        db = _parse_infoic(self._write_sections(tmp_path), section)
+        assert db["27C256@DIP28"]["chip_id"] == chip_id
+
+    def test_missing_section_falls_back_to_first_with_a_warning(self, tmp_path, caplog):
+        from minigecko.core.device_db import _parse_infoic
+
+        db = _parse_infoic(self._write_sections(tmp_path, ("INFOICT76",)), "INFOIC2PLUS")
+        assert db["27C256@DIP28"]["chip_id"] == "0x01"
+        assert any(r.levelname == "WARNING" for r in caplog.records)
+
+    @pytest.mark.parametrize("hardware, section", [
+        ("TL866A", "INFOIC"), ("TL866CS", "INFOIC"), ("T76", "INFOICT76"),
+        ("TL866II+", "INFOIC2PLUS"), ("T48", "INFOIC2PLUS"), ("T56", "INFOIC2PLUS"),
+        ("", "INFOIC2PLUS"),
+    ])
+    def test_section_for_programmer_follows_minipro(self, hardware, section):
+        # Mirrors translate_db() in minipro's src/database.c.
+        from minigecko.core.device_db import section_for_programmer
+
+        assert section_for_programmer(hardware) == section
+
+    def test_use_programmer_reloads_only_on_a_section_change(self, monkeypatch):
+        from minigecko.core import device_db
+
+        monkeypatch.setattr(device_db, "_section", "INFOIC2PLUS")
+        monkeypatch.setattr(device_db, "_DB", {"cached": {}})
+        monkeypatch.setattr(device_db, "_reload_hooks", [])
+        calls = []
+        device_db.on_reload(lambda: calls.append(1))
+
+        assert device_db.use_programmer("T48") is False
+        assert device_db._DB == {"cached": {}} and calls == []
+
+        assert device_db.use_programmer("T76") is True
+        assert device_db._section == "INFOICT76"
+        assert device_db._DB is None and calls == [1]
+
+    def test_identify_caches_clear_on_reload(self, monkeypatch):
+        from minigecko.core import device_db
+
+        unique_entries.cache_clear()
+        unique_entries()
+        assert unique_entries.cache_info().currsize == 1
+        monkeypatch.setattr(device_db, "_section", "INFOIC2PLUS")
+        monkeypatch.setattr(device_db, "_DB", device_db._DB)
+        device_db.use_programmer("T76")
+        assert unique_entries.cache_info().currsize == 0
+        assert chip_id_index.cache_info().currsize == 0
+        device_db.use_programmer("TL866II+")
+
     def test_unparseable_catalogue_is_logged_not_silent(self, tmp_path, caplog):
         from minigecko.core.device_db import _parse_infoic
 
