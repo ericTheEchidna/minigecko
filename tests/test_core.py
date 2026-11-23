@@ -83,6 +83,44 @@ class TestMiniproResult:
 
 
 # ---------------------------------------------------------------------------
+# device_db catalogue parsing
+# ---------------------------------------------------------------------------
+
+_INFOIC_WITH_BAD_COMMENT = """<?xml version="1.0" encoding="utf-8"?>
+<infoic>
+  <database type="INFOIC2PLUS">
+    <manufacturer name="TEST">
+      <!-- T76 only (not used for read/write) -- verify -->
+      <ic name="27C256@DIP28" type="1" chip_id="0x8C" flags="0x0"/>
+    </manufacturer>
+  </database>
+</infoic>
+"""
+
+
+class TestDeviceDbParsing:
+    def test_double_dash_in_a_comment_does_not_empty_the_catalogue(self, tmp_path):
+        # minipro's infoic.xml (commit 80a560b) has "--" inside a comment,
+        # which strict XML forbids; minipro's parser tolerates it.
+        from minigecko.core.device_db import _parse_infoic
+
+        path = tmp_path / "infoic.xml"
+        path.write_text(_INFOIC_WITH_BAD_COMMENT)
+        assert "27C256@DIP28" in _parse_infoic(path)
+
+    def test_unparseable_catalogue_is_logged_not_silent(self, tmp_path, caplog):
+        from minigecko.core.device_db import _parse_infoic
+
+        path = tmp_path / "infoic.xml"
+        path.write_text("<infoic><database>")
+        assert _parse_infoic(path) == {}
+        assert any(
+            r.levelname == "ERROR" and "infoic.xml" in r.getMessage()
+            for r in caplog.records
+        )
+
+
+# ---------------------------------------------------------------------------
 # Logic IC database (logicdb) — skipped when minipro is not installed
 # ---------------------------------------------------------------------------
 

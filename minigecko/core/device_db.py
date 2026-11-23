@@ -7,9 +7,13 @@ Loaded once at first access; all public access goes through get_db().
 
 from __future__ import annotations
 
+import logging
+import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from urllib.parse import quote
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -159,14 +163,30 @@ def _make_entry(
 # Parsers
 # ---------------------------------------------------------------------------
 
+_XML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+
+
+def _parse_xml_root(path: Path) -> ET.Element | None:
+    """Parse a minipro catalogue, tolerating what minipro's own parser does.
+
+    Comments are stripped first: minipro's infoic.xml has carried "--" inside
+    a comment, which strict XML rejects but libxml2 accepts.  A file that still
+    fails is logged as an error, never silently read as an empty catalogue.
+    """
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+        return ET.fromstring(_XML_COMMENT_RE.sub("", text))
+    except (OSError, ET.ParseError) as exc:
+        logger.error("Cannot parse minipro catalogue %s: %s", path, exc)
+        return None
+
+
 def _parse_infoic(path: Path) -> dict[str, dict]:
     db: dict[str, dict] = {}
-    try:
-        tree = ET.parse(path)
-    except Exception:
+    root = _parse_xml_root(path)
+    if root is None:
         return db
 
-    root = tree.getroot()
     database = root.find("database")
     if database is None:
         database = root  # some versions flatten the hierarchy
@@ -220,12 +240,10 @@ def _parse_infoic(path: Path) -> dict[str, dict]:
 
 def _parse_logicic(path: Path) -> dict[str, dict]:
     db: dict[str, dict] = {}
-    try:
-        tree = ET.parse(path)
-    except Exception:
+    root = _parse_xml_root(path)
+    if root is None:
         return db
 
-    root = tree.getroot()
     database = root.find("database")
     if database is None:
         database = root
