@@ -19,6 +19,7 @@
 | `f` | Open file picker |
 | `s` | Open chip selector |
 | `d` | Open IC operations (requires chip selected) |
+| `i` | Identify a chip with unreadable markings |
 | `Ctrl+D` | Toggle dark / light theme |
 | `Ctrl+P` | Open command palette |
 | `Ctrl+Q` | Quit |
