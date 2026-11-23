@@ -41,7 +41,8 @@ from minigecko.core.identify import (
     unique_entries,
 )
 from minigecko.core.logicdb import find_logic_ic, list_logic_ics, logicic_xml_path
-from minigecko.core.minipro import MiniproResult, ProgrammerInfo
+from minigecko.core import minipro
+from minigecko.core.minipro import NO_EXIT_STATUS, MiniproResult, ProgrammerInfo
 
 
 # ---------------------------------------------------------------------------
@@ -61,6 +62,24 @@ class TestMiniproResult:
         r = MiniproResult(ok=True, stdout="out", stderr="err")
         assert "out" in r.output
         assert "err" in r.output
+
+    def test_failure_without_exit_status_never_reads_as_exit_zero(self):
+        r = MiniproResult(ok=False, stderr="minipro timed out after 120 s")
+        assert r.returncode == NO_EXIT_STATUS != 0
+
+    def test_failure_keeps_a_real_exit_status(self):
+        assert MiniproResult(ok=False, returncode=1).returncode == 1
+
+    def test_missing_binary_has_no_exit_status(self, monkeypatch):
+        monkeypatch.setattr(minipro, "_override_binary", "/nonexistent/minipro")
+        r = minipro._run_subprocess(["-D"])
+        assert r.ok is False
+        assert r.returncode == NO_EXIT_STATUS
+
+    def test_missing_binary_is_not_a_chip_id_match(self, monkeypatch):
+        monkeypatch.setattr(minipro, "_transport", minipro._run_subprocess)
+        monkeypatch.setattr(minipro, "_override_binary", "/nonexistent/minipro")
+        assert minipro.read_chip_id("AM2764A@DIP28").data["matched"] is False
 
 
 # ---------------------------------------------------------------------------

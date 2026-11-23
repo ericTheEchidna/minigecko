@@ -28,14 +28,28 @@ ProgressCallback = Optional[Callable[[Optional[int], str], None]]
 # Result container
 # ---------------------------------------------------------------------------
 
+NO_EXIT_STATUS = -1
+"""``returncode`` of a failure that has no exit status: minipro never ran
+(binary missing, OSError) or was killed (timeout)."""
+
+
 @dataclass
 class MiniproResult:
-    """Unified return value from every minipro operation."""
+    """Unified return value from every minipro operation.
+
+    Invariant: a failed result never reports exit status 0.  A failure built
+    without a ``returncode`` gets ``NO_EXIT_STATUS``, so no caller can read a
+    command that never ran as one that exited cleanly.
+    """
     ok: bool
     stdout: str = ""
     stderr: str = ""
     returncode: int = 0
     data: dict = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if not self.ok and self.returncode == 0:
+            self.returncode = NO_EXIT_STATUS
 
     @property
     def output(self) -> str:
@@ -370,6 +384,10 @@ def read_chip_id(device: str) -> MiniproResult:
     ``result.ok`` is False whenever the ID differs from the carrier's, because
     minipro exits 1 on mismatch — but a mismatch is this function's SUCCESS
     case.  Callers must read ``result.data``, never gate on ``result.ok``.
+
+    ``matched`` requires both ``ok`` and exit 0.  The transport reports a
+    failed call honestly (see ``NO_EXIT_STATUS``), so the ``ok`` check is
+    belt and braces, kept because a false match is the worst outcome here.
     """
     result = _run(["-p", device, "-D"])
     text = _ANSI_RE.sub("", result.stdout + "\n" + result.stderr)
@@ -384,8 +402,8 @@ def read_chip_id(device: str) -> MiniproResult:
     elif result.ok and result.returncode == 0:
         # No mismatch reported and minipro was happy: the socketed chip is
         # the carrier.  The caller knows the carrier's ID from device_db.
-        # ``ok`` is checked too because transport failures (binary missing,
-        # timeout, OSError) leave ``returncode`` at its default 0.
+        # The transport now reports failures honestly (MiniproResult never
+        # pairs ok=False with exit 0); ``ok`` stays checked as belt and braces.
         result.data = {"expected_id": None, "chip_id": None, "matched": True}
     else:
         result.data = {"expected_id": None, "chip_id": None, "matched": False}
