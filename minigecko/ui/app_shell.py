@@ -40,6 +40,7 @@ class MinigeckoApp(App):
     #jed-pair { height: 1fr; }
     #jed-pair > Vertical { width: 1fr; height: 1fr; }
     #jed-pair .pane-title { background: $panel; color: $text-muted; padding: 0 1; height: 1; }
+    #jed-pair #eqn-title { height: auto; }  /* the decompile note may wrap */
     #jed-view, #jed-eqn { height: 1fr; border: none; }
     """
 
@@ -318,11 +319,14 @@ class MinigeckoApp(App):
         if text is not None:
             self.query_one("#jed-title", Static).update(text_title)
             self.query_one("#jed-view", TextArea).load_text(text)
-            self.query_one("#eqn-title", Static).update(
-                "Equations" if equations is not None else "Equations: not available"
-            )
-            body = f"{note}\n\n{equations}" if equations is not None else note
-            self.query_one("#jed-eqn", TextArea).load_text(body)
+            # The note goes in the title, so the pane holds only jedutil's output.
+            title = self.query_one("#eqn-title", Static)
+            if equations is not None:
+                title.update(f"Equations: {note}" if note else "Equations")
+                self.query_one("#jed-eqn", TextArea).load_text(equations)
+            else:
+                title.update("Equations: not available")
+                self.query_one("#jed-eqn", TextArea).load_text(note)
         self.action_show_tab("tab-data")
 
     def save_jed_split(self, percent: float) -> None:

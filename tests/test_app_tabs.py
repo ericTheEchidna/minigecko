@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from textual.widgets import TabbedContent, TextArea
+from textual.widgets import Static, TabbedContent, TextArea
 
 from minigecko.core import emulator
 from minigecko.core import minipro
@@ -77,7 +77,8 @@ async def test_jed_shows_equations_beside_the_fuse_map(app, monkeypatch):
         await pilot.pause(0.5)
         _load(app, JED)
         await pilot.pause(0.3)
-        assert "X = A" in app.query_one("#jed-eqn", TextArea).text
+        assert app.query_one("#jed-eqn", TextArea).text == "Equations:\n\nX = A"  # no note in it
+        assert "note." in str(app.query_one("#eqn-title", Static).render())
         assert "*QF2194" in app.query_one("#jed-view", TextArea).text
 
 
