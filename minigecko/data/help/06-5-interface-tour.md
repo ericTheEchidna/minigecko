@@ -30,7 +30,7 @@ Layout behavior:
 
 Typical workflow on screen:
 
-1. Select a chip (`s`) or identify one (`i`).
+1. Select a chip (`s`).
 2. Open or read data into the hex panel.
 3. Review chip metadata in the IC information panel.
 4. Run operations and monitor results in the action log.
@@ -38,8 +38,7 @@ Typical workflow on screen:
 ### 5.2 Keys in the Footer
 
 The footer lists every key that works on the main screen. `s` opens the chip
-selector and `i` the identify wizard. `d` opens the operations menu for the
-selected chip; it appears in the footer only once a chip is selected.
+selector. `d` opens the operations menu for the selected chip; it appears in the footer only once a chip is selected.
 
 The selected chip's details show in the IC information panel. Programmer status
 shows in the application subtitle, and operation results in the action log.

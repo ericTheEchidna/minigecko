@@ -375,9 +375,6 @@ def blank_check_verdict(result: MiniproResult) -> tuple[str, str]:
 
 
 _BAD_PIN_RE = re.compile(r"Bad contact on pin:(\d+)")
-_CHIP_ID_MISMATCH_RE = re.compile(
-    r"Chip ID mismatch:\s*expected\s*0x([0-9A-Fa-f]+),\s*got\s*0x([0-9A-Fa-f]+)"
-)
 
 
 def parse_bad_pins(text: str) -> list[int]:
@@ -420,48 +417,6 @@ def checked_blank_check(device: str) -> tuple[str, str]:
         lines = [ln.strip() for ln in contact.output.splitlines() if ln.strip()]
         return "error", "contact check failed: " + (lines[-1] if lines else "no message")
     return blank_check_verdict(blank_check_device(device))
-
-
-def read_chip_id(device: str) -> MiniproResult:
-    """
-    Read the chip ID via ``minipro -p <device> -D`` and nothing else.
-
-    *device* is used purely as an electrical harness: minipro needs a profile
-    to know which socket pins carry VCC/GND and which ID protocol to speak.
-
-    On completion, ``result.data`` holds:
-      - ``chip_id`` (str | None): the ID the silicon actually reported
-      - ``expected_id`` (str | None): the ID *device*'s profile expected
-      - ``matched`` (bool): True when the socketed chip IS *device*
-
-    ``result.ok`` is False whenever the ID differs from the carrier's, because
-    minipro exits 1 on mismatch — but a mismatch is this function's SUCCESS
-    case.  Callers must read ``result.data``, never gate on ``result.ok``.
-
-    ``matched`` requires both ``ok`` and exit 0.  The transport reports a
-    failed call honestly (see ``NO_EXIT_STATUS``), so the ``ok`` check is
-    belt and braces, kept because a false match is the worst outcome here.
-    """
-    result = _run(["-p", device, "-D"])
-    text = _ANSI_RE.sub("", result.stdout + "\n" + result.stderr)
-
-    match = _CHIP_ID_MISMATCH_RE.search(text)
-    if match:
-        result.data = {
-            "expected_id": f"0X{match.group(1).upper()}",
-            "chip_id": f"0X{match.group(2).upper()}",
-            "matched": False,
-        }
-    elif result.ok and result.returncode == 0:
-        # No mismatch reported and minipro was happy: the socketed chip is
-        # the carrier.  The caller knows the carrier's ID from device_db.
-        # The transport now reports failures honestly (MiniproResult never
-        # pairs ok=False with exit 0); ``ok`` stays checked as belt and braces.
-        result.data = {"expected_id": None, "chip_id": None, "matched": True}
-    else:
-        result.data = {"expected_id": None, "chip_id": None, "matched": False}
-
-    return result
 
 
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")

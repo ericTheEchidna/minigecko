@@ -38,7 +38,6 @@ class MinigeckoApp(App):
         Binding("f", "file", "File"),
         Binding("ctrl+s", "save", "Save"),
         Binding("s", "select_ic", "Select IC"),
-        Binding("i", "identify_ic", "Identify"),
         Binding("d", "ic_ops", "IC Ops"),
         Binding("h", "help", "Help"),
         Binding("ctrl+d", "toggle_dark", "Theme", show=True),
@@ -216,30 +215,21 @@ class MinigeckoApp(App):
         self._state["info_panel_height"] = int(panel.styles.height.value)  # type: ignore[union-attr]
         _save_state(self._state)
 
-    def _set_selected_ic(self, chip: str, verb: str) -> None:
+    def _set_selected_ic(self, chip: str) -> None:
         self._selected_ic = chip
         self.refresh_bindings()  # shows the IC Ops key in the footer
         self.query_one(ICInfoPanel).show(chip)
-        self.log_action(f"[green]IC  {verb}[/]  {chip}")
+        self.log_action(f"[green]IC  selected[/]  {chip}")
 
     def _open_chip_select(self) -> None:
         def _on_selected(chip: str | None) -> None:
             if chip:
-                self._set_selected_ic(chip, "selected")
+                self._set_selected_ic(chip)
 
         self.push_screen(ChipSelectScreen(), _on_selected)
 
     def action_select_ic(self) -> None:
         self._open_chip_select()
-
-    def action_identify_ic(self) -> None:
-        from minigecko.ui.modals import IdentifyScreen
-
-        def _on_identified(chip: str | None) -> None:
-            if chip:
-                self._set_selected_ic(chip, "identified")
-
-        self.push_screen(IdentifyScreen(), _on_identified)
 
     def check_action(self, action: str, parameters: tuple) -> bool | None:
         if action == "ic_ops":

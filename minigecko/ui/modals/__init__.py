@@ -5,7 +5,6 @@ from minigecko.ui.modals.confirmations import EraseConfirmScreen, WriteConfirmSc
 from minigecko.ui.modals.file_picker import FilePickerScreen
 from minigecko.ui.modals.help_screen import HelpScreen
 from minigecko.ui.modals.ic_ops import ICOpsScreen, infer_chip_type
-from minigecko.ui.modals.identify import IdentifyScreen
 
 __all__ = [
     "ChipSelectScreen",
@@ -13,7 +12,6 @@ __all__ = [
     "FilePickerScreen",
     "HelpScreen",
     "ICOpsScreen",
-    "IdentifyScreen",
     "WriteConfirmScreen",
     "infer_chip_type",
 ]

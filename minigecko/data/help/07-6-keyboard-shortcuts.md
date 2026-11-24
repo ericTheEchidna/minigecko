@@ -13,7 +13,6 @@ Global shortcuts:
 | `Ctrl+S` | Save the loaded data to a file |
 | `s` | Open chip selection |
 | `d` | Open IC operations for the selected chip |
-| `i` | Identify a chip whose markings are unreadable |
 | `h` | Open this manual |
 | `Ctrl+D` | Toggle theme |
 | `Ctrl+Q` | Quit MiniGecko |

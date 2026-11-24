@@ -6,7 +6,7 @@ Loaded once at first access; all public access goes through get_db().
 
 infoic.xml has one section per programmer family.  The section for the
 TL866II+/T48/T56 is used until ``use_programmer`` names another, which drops
-the cache and runs every ``on_reload`` hook.
+the cache.
 """
 
 from __future__ import annotations
@@ -15,7 +15,6 @@ import logging
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Callable
 from urllib.parse import quote
 
 logger = logging.getLogger(__name__)
@@ -330,7 +329,6 @@ def _build_db() -> dict[str, dict]:
 _DB: dict[str, dict] | None = None
 _section: str = DEFAULT_SECTION
 _section_reason: str = "default until a programmer is detected"
-_reload_hooks: list[Callable[[], None]] = []
 
 
 def section_for_programmer(hardware: str) -> str:
@@ -342,16 +340,11 @@ def section_for_programmer(hardware: str) -> str:
     return "INFOIC2PLUS"
 
 
-def on_reload(hook: Callable[[], None]) -> None:
-    """Register *hook* to drop caches derived from the catalogue on reload."""
-    _reload_hooks.append(hook)
-
-
 def use_programmer(hardware: str) -> bool:
     """Switch to the catalogue section for *hardware*.
 
     Returns True when the section changed: the catalogue is then rebuilt on
-    next access and every ``on_reload`` hook has run.
+    next access.
     """
     global _DB, _section, _section_reason
     section = section_for_programmer(hardware)
@@ -364,8 +357,6 @@ def use_programmer(hardware: str) -> bool:
                 hardware or "unknown", section, _section)
     _section = section
     _DB = None
-    for hook in _reload_hooks:
-        hook()
     return True
 
 

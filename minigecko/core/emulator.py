@@ -139,11 +139,6 @@ def _emu_pin_check(device: str) -> MiniproResult:
     return MiniproResult(ok=True, stdout=f"Pin check {device}: all pins OK (emulated)\n")
 
 
-def _emu_read_id(device: str) -> MiniproResult:
-    """Emulator mode assumes the selected device IS in the socket."""
-    return MiniproResult(ok=True, returncode=0, stdout=f"Chip ID OK {device} (emulated)\n")
-
-
 def _emu_blank_check(device: str) -> MiniproResult:
     fixture = _fixture_for(device)
     # Same wording as real minipro, so blank_check_verdict sees what hardware gives.
@@ -193,9 +188,6 @@ def emulate(args: list[str], input_data: Optional[bytes] = None, progress_cb=Non
 
         if "-b" in args:
             return _emu_blank_check(device)
-
-        if "-D" in args:
-            return _emu_read_id(device)
 
         if "-z" in args:
             return _emu_pin_check(device)
