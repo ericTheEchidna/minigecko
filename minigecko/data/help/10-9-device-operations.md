@@ -154,3 +154,33 @@ Troubleshooting:
 - Ensure pins are not bent.
 - Clean the ZIF socket contacts if contact failures persist.
 - Run pin check again before any write or erase operation to confirm seating.
+
+### 9.8 Programming GALs and Other PLDs
+
+GALs and Atmel ATF PLDs (ATF16V8B, GAL22V10 and similar) are programmed from a
+JEDEC fuse file (`.jed`), the output of WinCUPL, GALasm or openCUPL. MiniGecko
+uses the JEDEC format automatically when a PLD is selected.
+
+Workflow:
+
+1. Select the chip by its exact marking, suffix included. An ATF16V8B and an
+   ATF16V8C need different profiles: the C has one more fuse.
+2. Press `f` and open the `.jed` file.
+3. Open `IC Ops` and click `Write to device`. MiniGecko first checks that the
+   file fits the chip (see below), then shows the confirmation.
+4. The chip is erased, written and read back to verify, in one pass.
+
+Before anything is written, MiniGecko refuses a file when:
+
+- its fuse count differs from the chip's, for example a 22V10 file (5892
+  fuses) for a 16V8 chip (2194 fuses). The message quotes the file's `Device`
+  line, such as `g22v10`;
+- its fuse checksum does not match its fuses, which means the file is damaged;
+- it has no fuse count at all, so it is not a JEDEC file.
+
+`minipro` itself only warns about the first two and writes anyway, so this
+check matters.
+
+Reading a PLD saves a `.jed` file, which `Ctrl+S` can store and which can be
+written back later. A chip whose security fuse is set reads back blank, so
+for a secured chip the verify step during the write is the only check.
