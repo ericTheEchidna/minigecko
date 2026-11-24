@@ -48,7 +48,7 @@ Before writing:
 
 After writing:
 
-- Leave `Verify after write` enabled unless you have a specific reason to
+- Leave `Read back and verify` enabled unless you have a specific reason to
   skip it. A failed verify immediately after a successful write usually
   indicates a seating issue or a marginal device.
 
@@ -64,7 +64,7 @@ Recommended sequence for writing a device:
 
 1. Read the blank or original device and save it as a backup file.
 2. Run Blank Check to confirm the device is ready for writing.
-3. Write the target binary with `Verify after write` enabled.
+3. Write the target binary with `Read back and verify` enabled.
 4. If verify reports a mismatch, re-seat the device, run Pin Check, and
    repeat the write.
 

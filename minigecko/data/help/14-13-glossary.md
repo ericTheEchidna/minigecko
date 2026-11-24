@@ -52,7 +52,7 @@ MiniGecko and `minipro` handle the sequencing transparently.
 
 **Verify**
 A post-write step that reads the device back and compares it byte-by-byte
-against the source file. MiniGecko enables `Verify after write` by
+against the source file. MiniGecko enables `Read back and verify` by
 default. A failed verify indicates that the write did not complete
 correctly.
 

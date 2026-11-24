@@ -46,7 +46,7 @@
 
 | Key | Action |
 | --- | --- |
-| `Space` | Toggle `Verify after write` |
+| `Space` | Toggle `Read back and verify` |
 | `Enter` | Confirm write |
 | `Escape` | Cancel |
 

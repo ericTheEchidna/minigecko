@@ -320,7 +320,7 @@ def write_device(
     if format.upper() != "BIN":
         args += ["-f", format.lower()]
     if not verify:
-        args.append("-P")  # skip verify
+        args.append("-v")  # --skip_verify (-P would turn write protect ON)
     if skip_erase:
         args.append("-e")  # skip erase
     return _run(args, progress_cb=progress_cb)

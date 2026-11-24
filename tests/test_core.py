@@ -9,6 +9,7 @@ automatically when it is absent.
 """
 
 import importlib
+from pathlib import Path
 
 import pytest
 
@@ -635,6 +636,24 @@ class TestParseBadPins:
 
 
 from minigecko.core.minipro import MiniproResult, blank_check_verdict
+
+
+class TestWriteDeviceArgs:
+    def _args(self, monkeypatch, **kw):
+        from minigecko.core import minipro as mp
+        seen = {}
+        monkeypatch.setattr(mp, "_run", lambda args, **k: seen.setdefault("a", args))
+        mp.write_device("AT28C64", Path("x.bin"), **kw)
+        return seen["a"]
+
+    def test_verify_is_minipro_default(self, monkeypatch):
+        args = self._args(monkeypatch)
+        assert "-v" not in args and "-P" not in args
+
+    def test_skip_verify_is_dash_v_never_write_protect(self, monkeypatch):
+        args = self._args(monkeypatch, verify=False)
+        assert "-v" in args
+        assert "-P" not in args  # -P is --protect in minipro
 
 
 class TestBlankCheckVerdict:

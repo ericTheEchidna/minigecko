@@ -331,26 +331,34 @@ class MinigeckoApp(App):
 
         self.push_screen(FilePickerScreen(start_path=Path(self._state.get("last_directory", str(Path.home())))), _on_save)
 
-    def run_write_to_device_op(self, ic_name: str, verify_after: bool = False) -> None:
+    def run_write_to_device_op(self, ic_name: str, verify: bool = True) -> None:
         src = self._data_path
         if not src:
             self.log_action("[yellow]WRITE  no data loaded[/]")
             return
-        self._do_write_device(ic_name, src, verify_after)
+        self._do_write_device(ic_name, src, verify)
 
     @work(thread=True)
-    def _do_write_device(self, ic_name: str, path: Path, verify_after: bool) -> None:
+    def _do_write_device(self, ic_name: str, path: Path, verify: bool) -> None:
+        """Write *path*; minipro reads the chip back itself when *verify* is set."""
         from minigecko.core import write_device
 
         self._log(f"[cyan]WRITE[/]  {ic_name} ← {path.name} …")
-        result = write_device(ic_name, path, progress_cb=self._make_progress_cb())
+        result = write_device(ic_name, path, verify=verify, progress_cb=self._make_progress_cb())
         self.call_from_thread(self._hide_progress)
         if not result.ok:
-            self._log(f"[red]WRITE  {ic_name} FAILED:[/]  {result.output}")
+            failed = next(
+                (ln for ln in result.output.splitlines() if "Verification failed" in ln), None
+            )
+            if failed:
+                self._log(f"[red]WRITE  {ic_name} written but VERIFY FAILED:[/]  {failed.strip()}")
+            else:
+                self._log(f"[red]WRITE  {ic_name} FAILED:[/]  {result.output}")
             return
-        self._log(f"[green]WRITE  {ic_name} OK[/]")
-        if verify_after:
-            self._run_verify_in_thread(ic_name, path)
+        if verify:
+            self._log(f"[green]WRITE  {ic_name} OK[/]  read back and verified")
+        else:
+            self._log(f"[green]WRITE  {ic_name} OK[/]  [yellow]not verified[/]")
 
     def _run_verify_in_thread(self, ic_name: str, reference: Path) -> None:
         """Called from a worker thread, runs verify without spawning another thread."""

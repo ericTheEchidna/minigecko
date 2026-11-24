@@ -37,15 +37,12 @@ Workflow:
 1. Load or read the data you want to write.
 2. Open `IC Ops` and click `Write to device`.
 3. A confirmation dialog appears showing the data source name and a warning.
-4. Optionally toggle the `Verify after write` checkbox (enabled by default).
+4. Optionally toggle the `Read back and verify` checkbox (enabled by default).
 5. Press `Enter` to confirm or `Escape` to cancel.
 6. A progress bar shows streaming percentage while the write runs.
-7. If verify is enabled, MiniGecko reads the device back and compares it
-   against the written file. The log reports how many bytes match.
-
-NOTE: Verify after write reads the device a second time and performs a
-byte-by-byte comparison. A mismatch is reported with a byte count and
-percentage.
+7. If verify is enabled, `minipro` reads the device back in the same pass
+   and compares it with the file. On a mismatch the log names the first
+   address that differs.
 
 ### 9.3 Blank Check
 

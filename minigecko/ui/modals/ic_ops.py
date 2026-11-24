@@ -155,7 +155,7 @@ class ICOpsScreen(ModalScreen[None]):
                 if result is None:
                     return
                 self.dismiss(None)
-                self.app.run_write_to_device_op(self._ic_name, verify_after=result)
+                self.app.run_write_to_device_op(self._ic_name, verify=result)
 
             src_name = self.app.get_write_source_label()
             self.app.push_screen(

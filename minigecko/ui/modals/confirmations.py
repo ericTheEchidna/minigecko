@@ -44,7 +44,7 @@ class WriteConfirmScreen(ModalScreen):
             yield Label(self._message, classes="confirm-msg")
             if self._detail:
                 yield Label(self._detail, classes="confirm-detail")
-            yield Checkbox("Verify after write", value=True, id="chk-verify")
+            yield Checkbox("Read back and verify", value=True, id="chk-verify")
             yield Static("(Space) Toggle    (Enter) Confirm    (Esc) Cancel", classes="confirm-hint")
 
     def action_confirm(self) -> None:
