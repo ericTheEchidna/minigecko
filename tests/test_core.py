@@ -477,3 +477,52 @@ class TestEmulatedPld:
         from minigecko.core import emulator
         r = emu.write_device("ATF16V8B", JED_DIR / "forbin80_cf_22v10.jed")
         assert r.data.get("refused") and emulator._PLD_FUSES == {}
+
+
+needs_jedutil = pytest.mark.skipif(
+    __import__("shutil").which("jedutil") is None,
+    reason="MAME jedutil not installed (package mame-tools)",
+)
+
+
+class TestDecompile:
+    def test_strict_jedec_closes_minipros_last_field(self):
+        from minigecko.core.jedec import strict_jedec
+        raw = (JED_DIR / "minipro_read_16v8.jed").read_text()
+        assert not raw.split("\x03")[0].rstrip().endswith("*")  # minipro's omission
+        fixed = strict_jedec(raw)
+        body, _, tail = fixed.partition(b"\x03")
+        assert body.rstrip().endswith(b"*")
+        assert int(tail.strip(), 16) == (sum(body + b"\x03") & 0xFFFF)
+
+    def test_device_names(self):
+        from minigecko.core.jedec import jedutil_device
+        assert jedutil_device(2194) == "GAL16V8"
+        assert jedutil_device(2194, "ATF16V8B") == "ATF16V8"
+        assert jedutil_device(5892, "GAL22V10") == "GAL22V10"
+        assert jedutil_device(2195) is None
+
+    def test_names_flip_active_low_pins(self):
+        from minigecko.core.jedec import name_equations
+        names = {1: ("WR", True), 4: ("A4", False), 20: ("ROM_CE", True)}
+        view = "/o20 = /i1 & i4\no20.oe = vcc"
+        assert name_equations(view, names) == "ROM_CE = WR & A4\nROM_CE.oe = vcc"
+
+    def test_missing_jedutil_says_how_to_get_it(self, monkeypatch):
+        import shutil
+        from minigecko.core.jedec import JEDUTIL_MISSING, decompile
+        monkeypatch.setattr(shutil, "which", lambda name: None)
+        assert decompile(JED_DIR / "counter_16v8.jed") == (None, JEDUTIL_MISSING)
+
+    @needs_jedutil
+    def test_minipro_read_decompiles(self):
+        from minigecko.core.jedec import decompile
+        view, note = decompile(JED_DIR / "minipro_read_16v8.jed", "ATF16V8B")
+        assert view and "Equations:" in view and "ATF16V8" in note
+
+    @needs_jedutil
+    def test_pld_beside_jed_names_the_signals(self):
+        from minigecko.core.jedec import decompile
+        view, note = decompile(JED_DIR / "forbin80_mem.jed")
+        assert "forbin80_mem.pld" in note
+        assert "PAGE_CK = WR & IORQ & /A4 & /A5 & A6 & /A7" in view

@@ -21,7 +21,8 @@ Layout behavior:
 
 - Selecting a chip shows the Chip tab. Opening a file or reading a chip shows
 	the Data tab.
-- The Data tab shows binary data as hex, and a `.jed` fuse file as text.
+- The Data tab shows binary data as hex. A `.jed` fuse file shows as text,
+	with its logic equations beside it (see 9.8).
 - Drag the divider above the action log to make the log taller or shorter. Its
 	height is saved between sessions.
 

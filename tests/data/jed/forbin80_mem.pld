@@ -1,0 +1,107 @@
+Name     forbin80_mem ;
+Partno   00 ;
+Date     2026-09-11 ;
+Revision 04 ;
+Designer ericTheEchidna ;
+Company  Forbin80 ;
+Assembly Memory Card ;
+Location U5 ;
+Device   g22v10 ;
+
+/* The page register lives off-chip: U6, a 74HCT74, holds P0/P1 and U7, a   */
+/* 74HCT157, multiplexes them against A15 for U2's A16/A15. This PLD holds  */
+/* one register, so the 22V10's single global clock suffices.               */
+/* rationale: FORBIN80-090                                                  */
+
+/* ------- Inputs ------- */
+Pin  1 = !WR ;        /* Z80 ~WR, active-low (no register uses it now)      */
+Pin  2 = !IORQ ;      /* Z80 ~IORQ, active-low                              */
+Pin  3 = !MREQ ;      /* Z80 ~MREQ, active-low                              */
+Pin  4 = A12 ;
+Pin  5 = A13 ;
+Pin  6 = A14 ;
+Pin  7 = A15 ;
+Pin  8 = A4 ;
+Pin  9 = A5 ;
+Pin 10 = D0 ;
+Pin 11 = !RESET ;     /* Z80 ~RESET, active-low                             */
+Pin 13 = !RD ;        /* Z80 ~RD, active-low - qualifies the read mux       */
+Pin 14 = A6 ;         /* I/O pin used as input                              */
+Pin 15 = A7 ;         /* I/O pin used as input                              */
+
+/* D1 never reaches this part. It goes straight to U6, whose preset and     */
+/* clear give the reset value, so nothing is inverted here.                 */
+
+/* ------- Outputs ------- */
+Pin 16 = PAGE_CK ;    /* U6 clock: rises as ~WR asserts on a 0x40 write     */
+Pin 17 = WINDOW ;     /* U7 select: 1 inside 0x8000-0xFFFF                  */
+Pin 18 = ROM_ENABLE ; /* combinational: 1 = ROM overlay active; J2 probe    */
+Pin 19 = SRAM_CE2 ;   /* combinational: SRAM CE2 (active-high)              */
+Pin 20 = !ROM_CE ;    /* combinational: ROM ~CE (active-low)                */
+Pin 21 = ROM_OFF ;    /* latch (FORBIN80-141); 0 = ROM overlay active                 */
+
+/* 8 of 10 macrocells used, pins 22 and 23 spare.                           */
+
+/* ------- Equations ------- */
+
+/* GENERATED FROM decode/decode_map.json -- DO NOT EDIT BY HAND */
+
+/* ROM_EN: responds at 0x30-0x3F */
+/* ROM overlay latch, D0. Partially decoded: claims the whole aligned   */
+/* 0x30-0x3F block. Reads are open bus.                                 */
+PORT30 = IORQ & !A7 & !A6 & A5 & A4 ;
+
+/* PAGE: responds at 0x40-0x4F */
+/* Paged-window register, D0-D1, resets to 1 (the identity map).        */
+/* Selects which 32 KB bank of U2 appears at 0x8000-0xFFFF (roadmap     */
+/* D1). Partially decoded like ROM_EN: claims the whole aligned         */
+/* 0x40-0x4F block. Reads are open bus. U5 emits the PAGE_CK strobe;    */
+/* the register itself is U6, a 74HCT74, and U7, a 74HCT157,            */
+/* multiplexes it against the bus -- FORBIN80-090. The emulator models  */
+/* the window ahead of the board, FORBIN80-06D.                         */
+PORT40 = IORQ & !A7 & A6 & !A5 & !A4 ;
+
+/* END GENERATED */
+
+/* Everything below the decode_map block is this part's share of the card's  */
+/* decode function, decode/memory_map.json. The U6 page register and the U7  */
+/* address mux are the rest of it and live on the board, not here.           */
+/*                                                                           */
+/* The window resets to page 1 (P0 = 1, P1 = 0), the identity map. U6 is a   */
+/* 74HCT74 so each bit gets its own async input: ~RESET presets U6A (P0) and */
+/* clears U6B (P1), and firmware's values are stored as written. Decided     */
+/* over a '175, which clears every bit and would need P0 stored inverted     */
+/* with this part supplying !D0 -- FORBIN80-090.                             */
+
+/* GENERATED FROM decode/memory_map.json -- DO NOT EDIT BY HAND */
+
+ADDR_ROM      = !A15 & !A14 & !A13 & !A12 ;
+
+/* 0 is ROM overlay active, so the machine boots from 0x0000.           */
+/* FORBIN80-045. A latch opened by the decoded strobe PORT30 & WR, not  */
+/* a register clocked by raw WR: the Z80 raises IORQ and WR off the     */
+/* same T3 edge in no set order (Z84C00 AC #28, #32), so a register's   */
+/* IORQ term could change before its clock; the strobe closes on the    */
+/* first of the two, with address and data still held (#35, #45).       */
+/* FORBIN80-141                                                         */
+ROM_OFF       = !RESET & ((PORT30 & WR) & !D0 # !(PORT30 & WR) & ROM_OFF # !D0 & ROM_OFF) ;
+MIN ROM_OFF = 0 ;
+
+/* 1 = ROM overlay active; also the J2 probe                            */
+ROM_ENABLE    = !ROM_OFF ;
+
+/* ROM ~CE: overlay active, address in the ROM window, MREQ on          */
+ROM_CE        = !ROM_OFF & ADDR_ROM & MREQ ;
+
+/* SRAM CE2: deasserted in the ROM window on reads only, so writes      */
+/* still reach RAM. Do not drop the RD term -- FORBIN80-024             */
+SRAM_CE2      = !(!ROM_OFF & ADDR_ROM & RD) ;
+
+/* 1 inside 0x8000-0xFFFF; drives U7's select. Roadmap D1: the 32 KB    */
+/* window                                                               */
+WINDOW        = A15 ;
+
+/* U6's clock: rises as ~WR asserts on a write to 0x40-0x4F             */
+PAGE_CK       = PORT40 & WR ;
+
+/* END GENERATED */

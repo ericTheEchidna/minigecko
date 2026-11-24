@@ -181,6 +181,13 @@ Before anything is written, MiniGecko refuses a file when:
 `minipro` itself only warns about the first two and writes anyway, so this
 check matters.
 
+When a `.jed` is open or read from a chip, the Data tab shows its fuse map
+beside its logic equations, decompiled by MAME's `jedutil` (install it with
+`sudo pacman -S mame-tools`). If a `.pld` with the same name sits beside the
+`.jed`, the equations use its signal names, with active-low pins read the way
+the source declares them: `WR` means ~WR is asserted. An equation list with no
+logic means the chip is blank or was secured.
+
 Reading a PLD saves a `.jed` file, which `Ctrl+S` can store and which can be
 written back later. A chip whose security fuse is set reads back blank, so
 for a secured chip the verify step during the write is the only check.

@@ -39,7 +39,7 @@ async def test_tabs_follow_the_last_action(app, tmp_path):
         _load(app, rom)
         await pilot.pause(0.3)
         assert tabs.active == "tab-data"
-        assert app.query_one(HexPanel).display and not app.query_one("#jed-view").display
+        assert app.query_one(HexPanel).display and not app.query_one("#jed-pair").display
 
         app._set_selected_ic("7410")
         await pilot.pause(0.1)
@@ -57,7 +57,7 @@ async def test_jed_shows_as_text(app):
         _load(app, JED)
         await pilot.pause(0.3)
         jed = app.query_one("#jed-view", TextArea)
-        assert jed.display and not app.query_one(HexPanel).display
+        assert app.query_one("#jed-pair").display and not app.query_one(HexPanel).display
         assert "*QF2194" in jed.text and "\x02" not in jed.text
 
 
@@ -66,3 +66,14 @@ async def test_log_is_outside_the_tabs(app):
         await pilot.pause(0.5)
         log = app.query_one(ActionLogPanel)
         assert not any(isinstance(a, TabbedContent) for a in log.ancestors)
+
+
+async def test_jed_shows_equations_beside_the_fuse_map(app, monkeypatch):
+    from minigecko.core import jedec
+    monkeypatch.setattr(jedec, "decompile", lambda path, chip="": ("Equations:\n\nX = A", "note."))
+    async with app.run_test(size=(120, 36)) as pilot:
+        await pilot.pause(0.5)
+        _load(app, JED)
+        await pilot.pause(0.3)
+        assert "X = A" in app.query_one("#jed-eqn", TextArea).text
+        assert "*QF2194" in app.query_one("#jed-view", TextArea).text

@@ -10,6 +10,7 @@ from typing import ClassVar
 from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
+from textual.containers import Horizontal, Vertical
 from textual.widgets import Footer, Header, Static, TabbedContent, TabPane, TextArea
 
 from minigecko import __version__
@@ -32,7 +33,10 @@ class MinigeckoApp(App):
     #main-tabs { height: 1fr; }
     #main-tabs TabPane { padding: 0; }
     #data-empty { padding: 1 2; color: $text-muted; }
-    #jed-view { height: 1fr; border: none; }
+    #jed-pair { height: 1fr; }
+    #jed-pair > Vertical { width: 1fr; height: 1fr; }
+    #jed-pair .pane-title { background: $panel; color: $text-muted; padding: 0 1; height: 1; }
+    #jed-view, #jed-eqn { height: 1fr; border: none; }
     """
 
     BINDINGS: ClassVar[list[Binding]] = [
@@ -112,9 +116,15 @@ class MinigeckoApp(App):
                 hex_panel = HexPanel()
                 hex_panel.display = False
                 yield hex_panel
-                jed = TextArea("", read_only=True, id="jed-view")
-                jed.display = False
-                yield jed
+                # A .jed shows its raw fuse map beside the decompiled equations.
+                with Horizontal(id="jed-pair") as pair:
+                    pair.display = False
+                    with Vertical():
+                        yield Static("Fuse map (.jed)", classes="pane-title")
+                        yield TextArea("", read_only=True, id="jed-view")
+                    with Vertical():
+                        yield Static("Equations", id="eqn-title", classes="pane-title")
+                        yield TextArea("", read_only=True, id="jed-eqn")
         yield VResizeHandle()
         yield ActionLogPanel()
         yield Footer()
@@ -205,8 +215,11 @@ class MinigeckoApp(App):
             return
 
         if path.suffix.lower() == ".jed":
+            from minigecko.core.jedec import decompile
+
             text = data.decode("ascii", errors="replace").replace("\x02", "").replace("\x03", "")
-            self.call_from_thread(self._show_data, None, text)
+            equations, note = decompile(path, self._selected_ic or "")
+            self.call_from_thread(self._show_data, None, text, equations, note)
             return
 
         truncated = len(data) > _MAX_BYTES
@@ -216,17 +229,28 @@ class MinigeckoApp(App):
 
         self.call_from_thread(self._show_data, data, None)
 
-    def _show_data(self, data: bytes | None, text: str | None) -> None:
-        """Fill the Data tab with hex (*data*) or text (*text*) and switch to it."""
+    def _show_data(
+        self,
+        data: bytes | None,
+        text: str | None,
+        equations: str | None = None,
+        note: str = "",
+    ) -> None:
+        """Fill the Data tab and switch to it: hex for *data*, or a .jed's
+        *text* beside its decompiled *equations* (or *note* saying why not)."""
         self.query_one("#data-empty").display = False
         hex_panel = self.query_one(HexPanel)
-        jed = self.query_one("#jed-view", TextArea)
         hex_panel.display = data is not None
-        jed.display = text is not None
+        self.query_one("#jed-pair").display = text is not None
         if data is not None:
             hex_panel.load(data)
         if text is not None:
-            jed.load_text(text)
+            self.query_one("#jed-view", TextArea).load_text(text)
+            self.query_one("#eqn-title", Static).update(
+                "Equations" if equations is not None else "Equations: not available"
+            )
+            body = f"{note}\n\n{equations}" if equations is not None else note
+            self.query_one("#jed-eqn", TextArea).load_text(body)
         self.action_show_tab("tab-data")
 
     def save_log_height(self) -> None:
