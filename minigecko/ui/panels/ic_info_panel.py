@@ -6,12 +6,11 @@ from textual.app import ComposeResult
 from textual.containers import VerticalScroll
 from textual.widgets import Link, Static
 
-from minigecko.core.device_db import TYPE_EEPROM, TYPE_MCU, decode_flags
+from minigecko.core.device_db import decode_flags
 
 # Plain words for each set flag (keys from decode_flags). Unset flags are not shown.
 _FEATURE_TEXT = {
     "can_erase":           "Erases electrically",
-    "has_chip_id":         "Reports a chip ID, so Identify can confirm it",
     "word_size":           "16-bit data bus",
     "has_data_offset":     "Has a separate data memory",
     "off_protect_before":  "Write protect is cleared before writing",
@@ -27,8 +26,6 @@ _INTERFACE_TEXT = {
     "ICSP only":  "Programs in-circuit (ICSP) only",
     "Read-only":  "Read only: minipro cannot write it",
 }
-# Types where a missing chip ID is worth saying: Identify cannot confirm these.
-_ID_EXPECTED_TYPES = {TYPE_EEPROM, TYPE_MCU}
 
 
 def feature_lines(entry: dict) -> list[str]:
@@ -36,16 +33,12 @@ def feature_lines(entry: dict) -> list[str]:
     if not entry:
         return []
     lines: list[str] = []
-    has_id = False
     for key, _label, value in decode_flags(entry):
         if key == "prog_support":
             if value in _INTERFACE_TEXT:
                 lines.append(_INTERFACE_TEXT[value])
         elif value is True and key in _FEATURE_TEXT:
             lines.append(_FEATURE_TEXT[key])
-            has_id = has_id or key == "has_chip_id"
-    if not has_id and entry.get("type") in _ID_EXPECTED_TYPES:
-        lines.append("No chip ID: Identify cannot confirm it")
     return [f"• {line}" for line in lines]
 
 

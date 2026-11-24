@@ -106,9 +106,7 @@ Typical metadata fields:
 - ISP support indicator, when applicable.
 
 Capabilities are listed only when the part has them, in plain words: for
-example "Erases electrically" or "Reports a chip ID, so Identify can confirm
-it". For ROMs and microcontrollers without a chip ID the panel says so,
-because Identify cannot confirm such a part.
+example "Erases electrically" or "16-bit data bus".
 
 Use this panel as a verification step before write or erase operations. If the
 package, size, or capabilities do not match your actual device, return to
