@@ -365,6 +365,20 @@ def test_empty_socket_many_pins_says_seat_a_chip(monkeypatch):
 
 JED_DIR = Path(__file__).parent / "data" / "jed"
 
+# Catalogue entries the PLD tests need, so they run without minipro installed
+# (CI has none). Values from minipro -d on 2026-11-24.
+_FAKE_CATALOGUE = {
+    "ATF16V8B": {"type": 3, "code_memory_size": 2194},
+    "GAL22V10": {"type": 3, "code_memory_size": 5892},
+    "AT28C64": {"type": 1, "code_memory_size": 8192},
+}
+
+
+@pytest.fixture
+def fake_catalogue(monkeypatch):
+    from minigecko.core import device_db
+    monkeypatch.setattr(device_db, "get_device", lambda name: _FAKE_CATALOGUE.get(name))
+
 
 class TestJedec:
     """JEDEC files are checked against the chip before minipro sees them."""
@@ -402,6 +416,7 @@ class TestJedec:
         assert "no fuse count" in check_jed_for_chip(f, "ATF16V8B", 2194)
 
 
+@pytest.mark.usefixtures("fake_catalogue")
 class TestPldFormat:
     def _capture(self, monkeypatch):
         from minigecko.core import minipro as mp
@@ -430,6 +445,7 @@ class TestPldFormat:
         assert calls[0][-3:] == ["-f", "ihex", "-y"]
 
 
+@pytest.mark.usefixtures("fake_catalogue")
 class TestEmulatedPld:
     """The emulated PLD behaves like the bench ATF16V8B (2026-11-24)."""
 
