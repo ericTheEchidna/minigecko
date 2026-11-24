@@ -8,6 +8,8 @@ from textual.containers import Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Checkbox, Label, Static
 
+from minigecko.ui.widgets.check_box import CheckBox
+
 
 class WriteConfirmScreen(ModalScreen):
     """Write confirmation with optional verify-after-write checkbox."""
@@ -44,7 +46,7 @@ class WriteConfirmScreen(ModalScreen):
             yield Label(self._message, classes="confirm-msg")
             if self._detail:
                 yield Label(self._detail, classes="confirm-detail")
-            yield Checkbox("Read back and verify", value=True, id="chk-verify")
+            yield CheckBox("Read back and verify", value=True, id="chk-verify")
             yield Static("(Space) Toggle    (Enter) Confirm    (Esc) Cancel", classes="confirm-hint")
 
     def action_confirm(self) -> None:
@@ -86,8 +88,8 @@ class EraseConfirmScreen(ModalScreen):
         with Vertical(classes="confirm-container"):
             yield Label(self._title, classes="confirm-title")
             yield Label(self._message, classes="confirm-msg")
-            yield Checkbox("Blank check after erase", value=True, id="chk-blank")
-            yield Checkbox("Read after erase", value=False, id="chk-read")
+            yield CheckBox("Blank check after erase", value=True, id="chk-blank")
+            yield CheckBox("Read after erase", value=False, id="chk-read")
             yield Static("(Space) Toggle    (Enter) Confirm    (Esc) Cancel", classes="confirm-hint")
 
     def action_confirm(self) -> None:

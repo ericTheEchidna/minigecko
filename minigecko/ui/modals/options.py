@@ -9,17 +9,18 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, Checkbox, Input, Label, Select, Static
 
 from minigecko.core.pld import DEFAULT_COMPILER_OPTIONS, MINIMIZE_LEVELS
+from minigecko.ui.widgets.check_box import CheckBox
 
 # (tool, key, label) for each check box, in screen order.
 _CHECKS = [
     ("galette", "chp", "Pinout drawing (.chp)"),
     ("galette", "fus", "Fuse listing (.fus)"),
     ("galette", "pin", "Pin listing (.pin)"),
-    ("galette", "secure", "Set the security fuse (-s)"),
-    ("wincupl", "doc_equations", "Equations and product-term use in the .doc (-x)"),
-    ("wincupl", "doc_fuse_plot", "Fuse plot in the .doc (-f)"),
-    ("wincupl", "simulator", "Simulator files .abs and .sim (-a)"),
-    ("wincupl", "macros", "Expanded macros, .mx (-e)"),
+    ("galette", "secure", "Lock the GAL: set its security fuse (-s)"),
+    ("wincupl", "doc_equations", "Equations and product-term use (-x)"),
+    ("wincupl", "doc_fuse_plot", "Fuse plot (-f)"),
+    ("wincupl", "simulator", "Simulator files for WinSim: .abs and .sim (-a)"),
+    ("wincupl", "macros", "Macro listing: .mx (-e)"),
 ]
 
 
@@ -36,7 +37,8 @@ class OptionsScreen(ModalScreen):
     OptionsScreen .opt-title { text-style: bold; margin-bottom: 1; }
     OptionsScreen .opt-section { text-style: bold; color: $accent; margin-top: 1; }
     OptionsScreen .opt-note { color: $text-muted; }
-    OptionsScreen .opt-risk { color: $error; padding-left: 4; }
+    OptionsScreen .opt-risk { color: $error; padding-left: 5; }
+    OptionsScreen .opt-sub { margin-top: 1; }
     OptionsScreen VerticalScroll { height: auto; max-height: 30; }
     OptionsScreen Checkbox { border: none; padding: 0; }
     OptionsScreen Select { width: 100%; }  /* wide enough that no level's words wrap */
@@ -55,38 +57,43 @@ class OptionsScreen(ModalScreen):
         }
         self._wine_prefix = wine_prefix
 
-    def _check(self, tool: str, key: str, label: str) -> Checkbox:
-        return Checkbox(label, value=bool(self._options[tool][key]), id=f"opt-{tool}-{key}")
+    def _check(self, tool: str, key: str, label: str) -> CheckBox:
+        return CheckBox(label, value=bool(self._options[tool][key]), id=f"opt-{tool}-{key}")
 
     def compose(self) -> ComposeResult:
         with Vertical():
             yield Label("Compiler options", classes="opt-title")
             yield Static(
-                "F9 compiles a .pld with Galette or WinCUPL, by its language. "
-                "Both always write the .jed.",
+                "F9 compiles the open .pld. The file's first lines pick the tool. "
+                "Both tools always write the .jed; tick the other files you want.",
                 classes="opt-note",
             )
             with VerticalScroll():
-                yield Label("Galette (GALasm sources)", classes="opt-section")
+                yield Label("Galette: for GALasm files (they start with the chip, such as GAL16V8)",
+                            classes="opt-section")
                 for tool, key, label in _CHECKS[:4]:
                     yield self._check(tool, key, label)
                 yield Static(
-                    "Risk: a GAL with its security fuse set cannot be read or "
-                    "verified until it is erased.",
+                    "Leave this off unless the design must stay secret. A locked GAL "
+                    "cannot be read back or verified until it is erased.",
                     classes="opt-risk",
                 )
-                yield Label("WinCUPL (CUPL sources)", classes="opt-section")
-                for tool, key, label in _CHECKS[4:]:
+                yield Label("WinCUPL: for CUPL files (they declare Device …;)", classes="opt-section")
+                yield Label("Report file (.doc), written when either is ticked:", classes="opt-sub")
+                for tool, key, label in _CHECKS[4:6]:
                     yield self._check(tool, key, label)
-                yield Static("With neither of the first two, there is no .doc.", classes="opt-note")
-                yield Label("Minimisation", classes="opt-note")
+                yield Label("Other files:", classes="opt-sub")
+                for tool, key, label in _CHECKS[6:]:
+                    yield self._check(tool, key, label)
+                yield Label("Logic minimisation:", classes="opt-sub")
                 yield Select(
                     [(f"-m{n}  {words}", n) for n, words in MINIMIZE_LEVELS.items()],
                     value=int(self._options["wincupl"]["minimize"]),
                     allow_blank=False,
                     id="opt-wincupl-minimize",
                 )
-                yield Label("Wine prefix that holds WinCUPL (empty: ~/.wine-cupl)", classes="opt-note")
+                yield Label("Where WinCUPL is installed (Wine prefix); empty means ~/.wine-cupl:",
+                            classes="opt-sub")
                 yield Input(self._wine_prefix, placeholder="~/.wine-cupl", id="opt-wine-prefix")
             with Horizontal(id="opt-buttons"):
                 yield Button("Cancel", id="opt-cancel")
