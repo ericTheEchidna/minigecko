@@ -14,6 +14,7 @@ _DEFAULT_STATE: dict = {
     "jed_split": 50,  # Data tab: fuse map pane's share of the width, percent
     "last_directory": str(Path.home()),
     "minipro_path": "",  # empty = find on PATH; set to absolute path to override
+    "wincupl_prefix": "",  # Wine prefix holding WinCUPL; empty = ~/.wine-cupl
 }
 
 

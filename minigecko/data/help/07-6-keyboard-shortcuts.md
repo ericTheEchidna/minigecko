@@ -12,12 +12,12 @@ Global shortcuts:
 | `f` | Open the file picker |
 | `Ctrl+S` | Save edits to the open file (after a chip read: Save as) |
 | `F12` | Save as: save the loaded data under a new name |
-| `F9` | Compile the open `.pld` with Galette (saves first) |
+| `F9` | Compile the open `.pld` with Galette or WinCUPL, by its language (saves first) |
 | `Escape` | Leave the text you are editing, so letter keys work again |
 | `s` | Open chip selection |
 | `d` | Open IC operations for the selected chip |
 | `h` | Open this manual |
-| `y` | Copy the last minipro or jedutil command, to paste into a terminal (see Appendix B) |
+| `y` | Copy the last command run (minipro, jedutil, Galette or WinCUPL), to paste into a terminal (see Appendix B) |
 | `1` / `2` | Show the Chip / Data tab |
 | `Ctrl+D` | Toggle theme |
 | `Ctrl+Q` | Quit MiniGecko |

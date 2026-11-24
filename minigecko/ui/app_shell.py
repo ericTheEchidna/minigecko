@@ -89,6 +89,7 @@ class MinigeckoApp(App):
         self._last_command: str | None = None  # last external command line run
         self._saved_text: str | None = None  # editable text as last saved; None = not editable
         self._discard_armed: str | None = None  # action that may discard edits on its next press
+        self._compiling = False  # a compile is running; F9 waits for it
 
     def _on_command(self, command: str, note: str = "") -> None:
         """Log an external command line; called from any thread before it runs."""
@@ -198,6 +199,9 @@ class MinigeckoApp(App):
         from minigecko.core import set_binary_path, set_command_listener
 
         set_binary_path(self._state.get("minipro_path", ""))
+        from minigecko.core.pld import set_wine_prefix
+
+        set_wine_prefix(self._state.get("wincupl_prefix", ""))
         set_command_listener(self._on_command)
         self._poll_programmer()
         self._preload_device_db()
@@ -449,8 +453,9 @@ class MinigeckoApp(App):
         if action in ("save", "save_as"):
             return bool(self._data_path)
         if action == "compile":
-            return bool(self._data_path) and self._data_path.suffix.lower() == ".pld" \
-                and not self._read_from
+            if not self._data_path or self._data_path.suffix.lower() != ".pld" or self._read_from:
+                return False
+            return None if self._compiling else True  # None: shown, greyed out, while it runs
         return True
 
     def action_ic_ops(self) -> None:
@@ -572,16 +577,24 @@ class MinigeckoApp(App):
         path = self._data_path
         if not path or path.suffix.lower() != ".pld" or self._read_from:
             return
+        if self._compiling:  # one compile at a time: results must not cross
+            self.notify(f"Compiling {path.name}…")
+            return
         if self._unsaved() and not self._write_edits():
             return
+        self._compiling = True
+        self.refresh_bindings()
         self._do_compile(path)
 
-    @work(thread=True, exclusive=True, group="compile")
+    @work(thread=True)
     def _do_compile(self, path: Path) -> None:
         from minigecko.core.pld import compile_pld
 
         self._log(f"[cyan]COMPILE[/]  {path.name} …")
-        result = compile_pld(path)
+        try:
+            result = compile_pld(path)
+        finally:
+            self.call_from_thread(self._compile_done)
         if result.ok:
             self._log(f"[green]COMPILE  {path.name} OK[/]  {result.message}")
             self._load_hex(path)  # the equations and pinout come from the new .jed
@@ -589,6 +602,10 @@ class MinigeckoApp(App):
         self._log(f"[red]COMPILE  {path.name} FAILED:[/]  {escape(result.message)}")
         if result.line:
             self.call_from_thread(self._show_error_line, result.line)
+
+    def _compile_done(self) -> None:
+        self._compiling = False
+        self.refresh_bindings()
 
     def _show_error_line(self, line: int) -> None:
         """Put the cursor on *line* (1-based) of the open source."""

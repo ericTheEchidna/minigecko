@@ -37,9 +37,7 @@ def test_missing_galette_is_named_without_an_install_command(monkeypatch, tmp_pa
         assert word not in result.message
 
 
-def test_cupl_and_unknown_sources_are_refused_in_plain_words(tmp_path):
-    result = compile_pld(JED_DIR / "forbin80_mem.pld")
-    assert not result.ok and "WinCUPL" in result.message
+def test_unknown_sources_are_refused_in_plain_words(tmp_path):
     junk = tmp_path / "junk.pld"
     junk.write_text("hello\n")
     result = compile_pld(junk)
@@ -124,3 +122,123 @@ async def test_f9_compile_reloads_the_equations(app, tmp_path):
         await pilot.pause(2.0)
         assert (tmp_path / "gates_16v8.jed").exists()
         assert "AND = A & B" in app.query_one("#jed-eqn", TextArea).text  # named from the .pld
+
+
+# --- WinCUPL (CUPL sources) ------------------------------------------------
+
+def _has_wincupl() -> bool:
+    from minigecko.core.pld import wine_prefix
+    exe = wine_prefix() / "drive_c" / "Wincupl" / "Shared" / "cupl.exe"
+    return shutil.which("wine") is not None and exe.is_file()
+
+
+needs_wincupl = pytest.mark.skipif(not _has_wincupl(), reason="Wine and WinCUPL are not installed")
+
+
+def _cupl_copy(tmp_path: Path, name: str = "forbin80_mem") -> Path:
+    src = tmp_path / f"{name}.pld"
+    src.write_bytes((JED_DIR / "forbin80_mem.pld").read_bytes())
+    return src
+
+
+def test_missing_wincupl_names_the_path_it_checked(tmp_path, monkeypatch):
+    from minigecko.core import pld
+    monkeypatch.setattr(shutil, "which", lambda name: "/usr/bin/wine")
+    pld.set_wine_prefix(str(tmp_path / "no-such-prefix"))
+    try:
+        result = compile_pld(_cupl_copy(tmp_path))
+    finally:
+        pld.set_wine_prefix("")
+    assert not result.ok and "WinCUPL is not installed" in result.message
+    assert "no-such-prefix" in result.message
+    for word in ("apt", "pacman", "sudo"):
+        assert word not in result.message
+
+
+def test_missing_wine_is_named(tmp_path, monkeypatch):
+    from minigecko.core.pld import WINE_MISSING
+    monkeypatch.setattr(shutil, "which", lambda name: None)
+    assert compile_pld(_cupl_copy(tmp_path)).message == WINE_MISSING
+
+
+def test_non_ascii_is_refused_before_wincupl_runs(tmp_path, monkeypatch):
+    src = _cupl_copy(tmp_path)
+    src.write_text(src.read_text().replace("Revision 04", "Revision 04 — dash"))
+    line = next(n for n, ln in enumerate(src.read_text().splitlines(), 1) if "—" in ln)
+    monkeypatch.setattr("subprocess.run", lambda *a, **k: pytest.fail("WinCUPL must not run"))
+    if not _has_wincupl():
+        pytest.skip("the ASCII check runs after the WinCUPL install check")
+    result = compile_pld(src)
+    assert not result.ok and result.line == line and "ASCII" in result.message
+
+
+@needs_wincupl
+def test_wincupl_builds_the_committed_fuse_map_and_cleans_up(tmp_path):
+    src = _cupl_copy(tmp_path)
+    result = compile_pld(src)
+    assert result.ok, result.message
+
+    def fuses(path: Path) -> list[str]:
+        return [ln for ln in path.read_text(errors="replace").splitlines() if ln.startswith("*L")]
+
+    assert fuses(tmp_path / "forbin80_mem.jed") == fuses(JED_DIR / "forbin80_mem.jed")
+    assert (tmp_path / "forbin80_mem.doc").exists()
+    assert not [p for p in tmp_path.iterdir() if p.name.startswith("CB")]  # scratch removed
+
+
+@needs_wincupl
+def test_wincupl_syntax_error_names_its_line(tmp_path):
+    src = _cupl_copy(tmp_path, "broken")
+    lines = src.read_text().splitlines()
+    n = next(i for i, ln in enumerate(lines) if ln.startswith("PAGE_CK"))
+    lines[n] = "PAGE_CK = = PORT40 & WR"
+    src.write_text("\n".join(lines) + "\n")
+    result = compile_pld(src)
+    assert not result.ok and result.line == n + 1 and "invalid syntax" in result.message
+
+
+@needs_wincupl
+def test_logged_wincupl_command_runs_unchanged_in_a_shell(tmp_path):
+    import subprocess
+    from minigecko.core import minipro
+
+    src = _cupl_copy(tmp_path)
+    heard: list[str] = []
+    minipro.set_command_listener(lambda command, note: heard.append(command))
+    try:
+        assert compile_pld(src).ok
+    finally:
+        minipro.set_command_listener(None)
+    (src.with_suffix(".jed")).unlink()
+    (command,) = heard
+    subprocess.run(["bash", "-c", command], capture_output=True, timeout=120, check=True)
+    assert src.with_suffix(".jed").exists()  # the pasted command built it again
+
+
+async def test_f9_waits_for_a_running_compile(app, tmp_path, monkeypatch):
+    import time
+    from minigecko.core import pld
+
+    src = tmp_path / "gates.pld"
+    src.write_text("GAL16V8\nGates\n")
+    calls: list[float] = []
+
+    def slow_compile(path):
+        calls.append(time.time())
+        time.sleep(0.6)
+        return CompileResult(False, "line 1: nope", 1)
+
+    monkeypatch.setattr(pld, "compile_pld", slow_compile)
+    async with app.run_test(size=(120, 36)) as pilot:
+        await pilot.pause(0.5)
+        _open(app, src)
+        await pilot.pause(0.3)
+        await pilot.press("f9")
+        await pilot.pause(0.1)
+        assert app._compiling and app.check_action("compile", ()) is None  # greyed out
+        await pilot.press("f9")  # ignored while the first runs
+        await pilot.pause(1.0)
+        assert len(calls) == 1 and not app._compiling
+        await pilot.press("f9")  # free again afterwards
+        await pilot.pause(1.0)
+        assert len(calls) == 2
