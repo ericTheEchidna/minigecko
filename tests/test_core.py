@@ -428,3 +428,36 @@ class TestPldFormat:
         mp, calls = self._capture(monkeypatch)
         mp.read_device("AT28C64", Path("out.hex"), format="IHEX")
         assert calls[0][-3:] == ["-f", "ihex", "-y"]
+
+
+class TestEmulatedPld:
+    """The emulated PLD behaves like the bench ATF16V8B (2026-11-24)."""
+
+    @pytest.fixture
+    def emu(self, monkeypatch):
+        from minigecko.core import emulator
+        from minigecko.core import minipro as mp
+        monkeypatch.setattr(mp, "_transport", emulator.emulate)
+        monkeypatch.setattr(emulator, "_PLD_FUSES", {})
+        return mp
+
+    def test_write_verify_read_back_verify(self, emu, tmp_path):
+        jed = JED_DIR / "counter_16v8.jed"
+        assert emu.write_device("ATF16V8B", jed).ok
+        assert emu.verify_device("ATF16V8B", jed).ok
+        out = tmp_path / "back.jed"
+        assert emu.read_device("ATF16V8B", out).ok
+        assert emu.verify_device("ATF16V8B", out).ok
+
+    def test_unwritten_chip_reads_blank_and_fails_verify(self, emu, tmp_path):
+        from minigecko.core.jedec import parse_jed
+        out = tmp_path / "blank.jed"
+        assert emu.read_device("ATF16V8B", out).ok
+        jed = parse_jed(out.read_text())
+        assert jed.fuse_count == 2194 and jed.declared_checksum == jed.fuse_checksum
+        assert not emu.verify_device("ATF16V8B", JED_DIR / "counter_16v8.jed").ok
+
+    def test_wrong_file_leaves_the_chip_alone(self, emu):
+        from minigecko.core import emulator
+        r = emu.write_device("ATF16V8B", JED_DIR / "forbin80_cf_22v10.jed")
+        assert r.data.get("refused") and emulator._PLD_FUSES == {}

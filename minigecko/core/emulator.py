@@ -85,6 +85,65 @@ def _size_for(device: str) -> int:
 
 
 # ---------------------------------------------------------------------------
+# PLD chips: the emulator remembers each one's fuse file, like a real chip
+# ---------------------------------------------------------------------------
+
+_PLD_FUSES: dict[str, str] = {}   # device -> JEDEC text last written
+
+
+def _pld_fuse_count(device: str) -> int | None:
+    """Fuse count when *device* is a PLD profile, else None."""
+    from minigecko.core.device_db import TYPE_PLD, get_device
+
+    entry = get_device(device) or {}
+    if entry.get("type") != TYPE_PLD:
+        return None
+    return entry.get("code_memory_size") or 0
+
+
+def _blank_jed(device: str, fuses: int) -> str:
+    """An erased PLD's fuse file: every fuse 1, as minipro reads it."""
+    from minigecko.core.jedec import _fuse_checksum
+
+    return (f"\x02\nDevice: {device}\n\nNOTE: emulated\n\n*QF{fuses}\n*F1\n*G0\n"
+            f"*C{_fuse_checksum([1] * fuses):04X}\n*\n\x03")
+
+
+def _pld_jed(device: str, fuses: int) -> str:
+    return _PLD_FUSES.get(device) or _blank_jed(device, fuses)
+
+
+def _emu_pld_write(device: str, input_path: str) -> MiniproResult:
+    from minigecko.core.jedec import JedError, parse_jed
+
+    try:
+        text = Path(input_path).read_text(errors="replace")
+        jed = parse_jed(text)
+    except (OSError, JedError) as exc:
+        return MiniproResult(ok=False, returncode=1, stderr=f"JED file format error! ({exc})\n")
+    _PLD_FUSES[device] = text
+    return MiniproResult(ok=True, stderr=(
+        f"Declared fuse checksum: 0x{jed.declared_checksum or 0:04X} "
+        f"Calculated: 0x{jed.fuse_checksum:04X} ... OK\n"
+        "JED file parsed OK\n\nErasing... OK\nWriting jedec file... OK\n"
+        "Reading device... OK\nVerification OK (emulated)\n"))
+
+
+def _emu_pld_verify(device: str, fuses: int, reference: str) -> MiniproResult:
+    from minigecko.core.jedec import JedError, parse_jed
+
+    try:
+        want = parse_jed(Path(reference).read_text(errors="replace")).fuse_checksum
+    except (OSError, JedError) as exc:
+        return MiniproResult(ok=False, returncode=1, stderr=f"JED file format error! ({exc})\n")
+    have = parse_jed(_pld_jed(device, fuses)).fuse_checksum
+    if want == have:
+        return MiniproResult(ok=True, stderr="Verification OK (emulated)\n")
+    return MiniproResult(ok=False, returncode=1, stderr=(
+        "Verification failed at address 0x0000: File=0x01, Device=0x00 (emulated)\n"))
+
+
+# ---------------------------------------------------------------------------
 # Individual operation handlers
 # ---------------------------------------------------------------------------
 
@@ -171,6 +230,19 @@ def emulate(args: list[str], input_data: Optional[bytes] = None, progress_cb=Non
     if "-p" in args:
         idx = args.index("-p")
         device = args[idx + 1] if idx + 1 < len(args) else "UNKNOWN"
+
+        fuses = _pld_fuse_count(device)
+        if fuses is not None:  # PLD: JEDEC in and out, like minipro
+            if "-r" in args:
+                out = args[args.index("-r") + 1]
+                Path(out).write_text(_pld_jed(device, fuses))
+                return MiniproResult(ok=True, stderr="Reading device... OK (emulated)\n")
+            if "-w" in args:
+                return _emu_pld_write(device, args[args.index("-w") + 1])
+            if "-m" in args:
+                return _emu_pld_verify(device, fuses, args[args.index("-m") + 1])
+            if "-E" in args:
+                _PLD_FUSES.pop(device, None)
 
         if "-r" in args:
             out_idx = args.index("-r")

@@ -150,6 +150,12 @@ class ICOpsScreen(ModalScreen[None]):
             self.dismiss(None)
             self.app.run_read_op(self._ic_name)
         elif widget_id == "op-write_device":
+            problem = self.app.write_source_problem(self._ic_name)
+            if problem:
+                self.dismiss(None)
+                self.app.log_action(f"[red]WRITE  {self._ic_name} refused:[/]  {problem}")
+                return
+
             def _on_write_confirmed(result) -> None:
                 if result is None:
                     return

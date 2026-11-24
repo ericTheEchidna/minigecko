@@ -296,8 +296,10 @@ class MinigeckoApp(App):
     def _do_read(self, ic_name: str) -> None:
         import tempfile
         from minigecko.core import read_device
+        from minigecko.core.minipro import format_for_device
 
-        fd, tmp_str = tempfile.mkstemp(prefix=f"minigecko_{ic_name}_", suffix=".bin")
+        suffix = ".jed" if format_for_device(ic_name) == "JED" else ".bin"
+        fd, tmp_str = tempfile.mkstemp(prefix=f"minigecko_{ic_name}_", suffix=suffix)
         os.close(fd)
         tmp = Path(tmp_str)
         self._log(f"[cyan]READ[/]  {ic_name} …")
@@ -327,7 +329,7 @@ class MinigeckoApp(App):
         if not src:
             self.log_action("[yellow]SAVE  no data loaded[/]")
             return
-        default = f"{self._read_from}.bin" if self._read_from else src.name
+        default = f"{self._read_from}{src.suffix}" if self._read_from else src.name
 
         def _on_save(save_path: Path | None) -> None:
             if not save_path:
@@ -348,6 +350,24 @@ class MinigeckoApp(App):
             self.log_action(f"[green]SAVE  OK[/]  → {save_path}")
 
         self.push_screen(FilePickerScreen(start_path=self.get_last_directory(), save_name=default), _on_save)
+
+    def write_source_problem(self, ic_name: str) -> str | None:
+        """Why the loaded data must not be written to *ic_name*, or None.
+
+        Checked before the confirmation step, so nothing is erased for a file
+        that cannot fit. write_device checks again before minipro runs.
+        """
+        from minigecko.core.device_db import get_device
+        from minigecko.core.jedec import check_jed_for_chip
+        from minigecko.core.minipro import format_for_device
+
+        if not self._data_path:
+            return "no data loaded: open a .jed file with f first" \
+                if format_for_device(ic_name) == "JED" else "no data loaded"
+        if format_for_device(ic_name) != "JED":
+            return None
+        fuses = (get_device(ic_name) or {}).get("code_memory_size") or 0
+        return check_jed_for_chip(self._data_path, ic_name, fuses)
 
     def run_write_to_device_op(self, ic_name: str, verify: bool = True) -> None:
         src = self._data_path
