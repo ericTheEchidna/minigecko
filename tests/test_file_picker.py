@@ -80,3 +80,37 @@ async def test_open_mode_enter_on_tree_cursor_opens_file(tmp_path: Path) -> None
         await pilot.press("enter")
         await pilot.pause()
     assert app.result == tmp_path / "rom.bin"
+
+
+async def test_backspace_goes_up_a_folder(tmp_path: Path) -> None:
+    sub = tmp_path / "roms"
+    sub.mkdir()
+    app = _Harness(sub, None)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("backspace")
+        await pilot.pause()
+        assert app.screen.query_one("#filetree", DirectoryTree).path == tmp_path
+
+
+async def test_clicking_up_goes_up_a_folder(tmp_path: Path) -> None:
+    sub = tmp_path / "roms"
+    sub.mkdir()
+    app = _Harness(sub, None)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.click("#up-dir")
+        await pilot.pause()
+        assert app.screen.query_one("#filetree", DirectoryTree).path == tmp_path
+
+
+async def test_backspace_in_save_name_edits_text(tmp_path: Path) -> None:
+    sub = tmp_path / "roms"
+    sub.mkdir()
+    app = _Harness(sub, "AT28C64.bin")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("end", "backspace")  # the name starts fully selected
+        await pilot.pause()
+        assert app.screen.query_one("#save-name", Input).value == "AT28C64.bi"
+        assert app.screen.query_one("#filetree", DirectoryTree).path == sub

@@ -36,6 +36,8 @@ class FilePickerScreen(ModalScreen[Path | None]):
     BINDINGS = [
         Binding("enter", "confirm", "OK", priority=True),
         Binding("escape", "cancel", "Cancel"),
+        # Not priority: in the save dialog's name box Backspace still edits text.
+        Binding("backspace", "go_up", "Up a folder"),
     ]
 
     def __init__(self, start_path: Path = Path.home(), save_name: str | None = None) -> None:
@@ -51,7 +53,7 @@ class FilePickerScreen(ModalScreen[Path | None]):
     def compose(self) -> ComposeResult:
         with Vertical(classes="picker-container"):
             yield Static("Save as" if self._saving else "Open file", id="picker-title")
-            yield Static("↑  ..", id="up-dir")
+            yield Static(self._up_label(), id="up-dir")
             yield DirectoryTree(str(self._root), id="filetree")
             if self._saving:
                 yield Input(self._save_name or "", placeholder="File name", id="save-name")
@@ -68,9 +70,15 @@ class FilePickerScreen(ModalScreen[Path | None]):
     def on_mount(self) -> None:
         self.query_one("#save-name" if self._saving else "#filetree").focus()
 
-    def on_static_clicked(self, event: Static.Clicked) -> None:  # type: ignore[attr-defined]
-        if event.static.id == "up-dir":
+    def _up_label(self) -> str:
+        return f"↑ Up a folder (Backspace)    {self._root}"
+
+    def on_click(self, event) -> None:
+        if getattr(event.widget, "id", None) == "up-dir":
             self._go_up()
+
+    def action_go_up(self) -> None:
+        self._go_up()
 
     def _go_up(self) -> None:
         parent = self._root.parent
@@ -78,6 +86,7 @@ class FilePickerScreen(ModalScreen[Path | None]):
             return
         self._root = parent
         self._save_dir = parent
+        self.query_one("#up-dir", Static).update(self._up_label())
         self._selected = None
         self.query_one("#selected-label", Label).update(self._save_hint())
         tree = self.query_one("#filetree", DirectoryTree)
