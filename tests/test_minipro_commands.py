@@ -42,11 +42,13 @@ def test_each_operation_logs_the_command_it_runs(heard, tmp_path):
     out = tmp_path / "my roms" / "read (1).bin"  # spaces and brackets must survive
     out.parent.mkdir()
     minipro.read_device("AT28C64", out)
+    minipro.write_device("AT28C64", out, verify=False)
     minipro.checked_blank_check("AT28C64")
     minipro.erase_device("AT28C64")
     minipro.logic_test("7400")
 
-    assert len(commands) == len(ran) == 5  # blank check is a pin check, then -b
+    assert len(commands) == len(ran) == 6  # blank check is a pin check, then -b
+    assert shlex.split(commands[1])[1:] == ["-p", "AT28C64", "-w", str(out), "-y", "-v"]
     for command, args in zip(commands, ran):
         words = shlex.split(command)
         assert words[0] == "minipro"
