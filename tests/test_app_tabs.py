@@ -102,3 +102,30 @@ async def test_dragging_the_divider_resizes_the_jed_panes(app, monkeypatch):
         assert right.size.width > before + 25
         assert saved and saved[-1]["jed_split"] < 30  # remembered as a share of the width
         assert left.styles.width.value == saved[-1]["jed_split"]
+
+
+async def test_pld_shows_source_beside_its_jeds_equations(app, monkeypatch, tmp_path):
+    from minigecko.core import jedec
+    opened: list[Path] = []
+
+    def fake(path, chip=""):
+        opened.append(path)
+        return ("Equations:\n\nPAGE_CK = WR", "Decompiled.")
+
+    monkeypatch.setattr(jedec, "decompile", fake)
+    pld = JED.parent / "forbin80_mem.pld"
+    async with app.run_test(size=(120, 36)) as pilot:
+        await pilot.pause(0.5)
+        _load(app, pld)
+        await pilot.pause(0.3)
+        assert app.query_one("#jed-pair").display and not app.query_one(HexPanel).display
+        assert "Device   g22v10" in app.query_one("#jed-view", TextArea).text
+        assert "PAGE_CK = WR" in app.query_one("#jed-eqn", TextArea).text
+        assert opened == [pld.with_suffix(".jed")]
+
+        lone = tmp_path / "lone.pld"
+        lone.write_text("GAL16V8\nLone\n")
+        _load(app, lone)
+        await pilot.pause(0.3)
+        assert "GAL16V8" in app.query_one("#jed-view", TextArea).text
+        assert "No lone.jed beside lone.pld" in app.query_one("#jed-eqn", TextArea).text

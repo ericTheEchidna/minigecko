@@ -158,7 +158,7 @@ class MinigeckoApp(App):
                 with Horizontal(id="jed-pair") as pair:
                     pair.display = False
                     with Vertical(id="jed-left"):
-                        yield Static("Fuse map (.jed)", classes="pane-title")
+                        yield Static("Fuse map (.jed)", id="jed-title", classes="pane-title")
                         yield TextArea("", read_only=True, id="jed-view")
                     yield HResizeHandle("jed-left", id="jed-split")
                     with Vertical():
@@ -250,7 +250,8 @@ class MinigeckoApp(App):
 
     @work(thread=True)
     def _load_hex(self, path: Path) -> None:
-        """Show *path* in the Data tab: a .jed as text, anything else as hex."""
+        """Show *path* in the Data tab: a .jed or .pld as text beside equations,
+        anything else as hex."""
         panel = self.query_one(HexPanel)
         self.call_from_thread(panel.clear)
 
@@ -268,6 +269,28 @@ class MinigeckoApp(App):
             self.call_from_thread(self._show_data, None, text, equations, note)
             return
 
+        if path.suffix.lower() == ".pld":
+            # The source beside the equations of the .jed built from it, if any.
+            from minigecko.core.jedec import decompile
+
+            text = data.decode("utf-8", errors="replace")
+            jed = next(
+                (p for p in (path.with_suffix(".jed"), path.with_suffix(".JED")) if p.exists()),
+                None,
+            )
+            if jed is None:
+                equations, note = None, (
+                    f"No {path.stem}.jed beside {path.name}. Compile it with Galette "
+                    "or WinCUPL, then open the .pld or the .jed again."
+                )
+            else:
+                equations, note = decompile(jed, self._selected_ic or "")
+                note = f"From {jed.name}. {note}"
+            self.call_from_thread(
+                self._show_data, None, text, equations, note, f"Source ({path.name})"
+            )
+            return
+
         truncated = len(data) > _MAX_BYTES
         if truncated:
             data = data[:_MAX_BYTES]
@@ -281,9 +304,11 @@ class MinigeckoApp(App):
         text: str | None,
         equations: str | None = None,
         note: str = "",
+        text_title: str = "Fuse map (.jed)",
     ) -> None:
-        """Fill the Data tab and switch to it: hex for *data*, or a .jed's
-        *text* beside its decompiled *equations* (or *note* saying why not)."""
+        """Fill the Data tab and switch to it: hex for *data*, or *text* (a
+        .jed's fuse map or a .pld source, titled *text_title*) beside the
+        decompiled *equations* (or *note* saying why not)."""
         self.query_one("#data-empty").display = False
         hex_panel = self.query_one(HexPanel)
         hex_panel.display = data is not None
@@ -291,6 +316,7 @@ class MinigeckoApp(App):
         if data is not None:
             hex_panel.load(data)
         if text is not None:
+            self.query_one("#jed-title", Static).update(text_title)
             self.query_one("#jed-view", TextArea).load_text(text)
             self.query_one("#eqn-title", Static).update(
                 "Equations" if equations is not None else "Equations: not available"
