@@ -31,15 +31,15 @@ class OptionsScreen(ModalScreen):
     DEFAULT_CSS = """
     OptionsScreen { align: center middle; }
     OptionsScreen > Vertical {
-        width: 76; height: auto; max-height: 90%;
+        width: 76; height: auto; max-height: 100%;
         border: thick $accent; background: $surface; padding: 1 2;
     }
     OptionsScreen .opt-title { text-style: bold; margin-bottom: 1; }
     OptionsScreen .opt-section { text-style: bold; color: $accent; margin-top: 1; }
     OptionsScreen .opt-note { color: $text-muted; }
     OptionsScreen .opt-risk { color: $error; padding-left: 5; }
-    OptionsScreen .opt-sub { margin-top: 1; }
-    OptionsScreen VerticalScroll { height: auto; max-height: 30; }
+    OptionsScreen .opt-sub { color: $text; }
+    OptionsScreen VerticalScroll { height: auto; }  /* max-height set to fit the screen */
     OptionsScreen Checkbox { border: none; padding: 0; }
     OptionsScreen Select { width: 100%; }  /* wide enough that no level's words wrap */
     OptionsScreen Input { width: 100%; }
@@ -48,6 +48,21 @@ class OptionsScreen(ModalScreen):
     """
 
     BINDINGS = [Binding("escape", "cancel", "Cancel")]
+
+    # Rows around the options area: border 2, padding 2, title 2, note 2,
+    # buttons 3 and their margin 1.
+    _CHROME_ROWS = 12
+
+    def on_mount(self) -> None:
+        self._fit_to_screen()
+
+    def on_resize(self) -> None:
+        self._fit_to_screen()
+
+    def _fit_to_screen(self) -> None:
+        """Let the options scroll, so the buttons stay on a short terminal."""
+        room = max(4, self.size.height - self._CHROME_ROWS)
+        self.query_one(VerticalScroll).styles.max_height = room
 
     def __init__(self, options: dict, wine_prefix: str) -> None:
         super().__init__()
@@ -69,8 +84,7 @@ class OptionsScreen(ModalScreen):
                 classes="opt-note",
             )
             with VerticalScroll():
-                yield Label("Galette: for GALasm files (they start with the chip, such as GAL16V8)",
-                            classes="opt-section")
+                yield Label("Galette: GALasm files (the first line names the chip)", classes="opt-section")
                 for tool, key, label in _CHECKS[:4]:
                     yield self._check(tool, key, label)
                 yield Static(
@@ -78,7 +92,7 @@ class OptionsScreen(ModalScreen):
                     "cannot be read back or verified until it is erased.",
                     classes="opt-risk",
                 )
-                yield Label("WinCUPL: for CUPL files (they declare Device …;)", classes="opt-section")
+                yield Label("WinCUPL: CUPL files (they declare Device …;)", classes="opt-section")
                 yield Label("Report file (.doc), written when either is ticked:", classes="opt-sub")
                 for tool, key, label in _CHECKS[4:6]:
                     yield self._check(tool, key, label)

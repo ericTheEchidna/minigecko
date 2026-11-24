@@ -303,3 +303,14 @@ async def test_options_screen_saves_to_state(app, monkeypatch, default_options):
     assert saved[-1]["compiler_options"]["wincupl"]["simulator"] is True
     assert saved[-1]["compiler_options"]["wincupl"]["minimize"] == 4
     assert default_options.wincupl_flags() == ["-j", "-n", "-a", "-x", "-f", "-m4"]
+
+
+async def test_options_buttons_stay_on_a_short_terminal(app):
+    async with app.run_test(size=(100, 30)) as pilot:
+        await pilot.pause(0.5)
+        await pilot.press("o")
+        await pilot.pause(0.5)
+        save = app.screen.query_one("#opt-save")
+        assert save.region.bottom <= 30 and save.region.height == 3  # fully on screen
+        scroll = app.screen.query_one("VerticalScroll")
+        assert scroll.max_scroll_y > 0  # the options scroll instead of being cut off
