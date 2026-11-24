@@ -287,3 +287,50 @@ async def test_l_hides_and_shows_the_log_and_errors_bring_it_back(app, monkeypat
         assert not log.display
         await pilot.press("l")
         assert log.display and saved[-1]["log_visible"] is True
+
+
+# --- .pld syntax colouring (MINIGECKO-01D, piece 3) --------------------------
+
+def _named(lines, highlights, row):
+    return {(lines[row].encode()[s:e].decode(), n) for s, e, n in highlights.get(row, [])}
+
+
+def test_galasm_colours():
+    from minigecko.ui.widgets.pld_text_area import galasm_highlights
+    lines = (JED.parent / "counter4_16v8.pld").read_text().split("\n")
+    h = galasm_highlights(lines)
+    assert ("GAL16V8", "type.builtin") in _named(lines, h, 0)
+    assert ("Counter4", "string") in _named(lines, h, 1)
+    eq = next(i for i, ln in enumerate(lines) if ln.startswith("Q0.R"))
+    assert {(".R", "method"), ("*", "keyword.operator"), ("; Q0 xor EN", "comment")} <= _named(lines, h, eq)
+    desc = lines.index("DESCRIPTION")
+    assert ("DESCRIPTION", "keyword") in _named(lines, h, desc)
+    assert all(n == "comment" for _, n in _named(lines, h, desc + 2))  # free text after it
+
+
+def test_cupl_colours_and_multiline_comments():
+    from minigecko.ui.widgets.pld_text_area import cupl_highlights
+    lines = ["Device g22v10 ;", "/* a comment", "   still comment */ X = A & !B ;", "Pin 3 = !MREQ ;"]
+    h = cupl_highlights(lines)
+    assert {("Device", "keyword"), ("g22v10", "type.builtin")} <= _named(lines, h, 0)
+    assert _named(lines, h, 1) == {("/* a comment", "comment")}
+    assert {("   still comment */", "comment"), ("&", "keyword.operator"), ("!", "keyword.operator")} <= _named(lines, h, 2)
+    assert {("Pin", "keyword"), ("3", "number")} <= _named(lines, h, 3)
+
+
+async def test_source_pane_is_coloured_and_other_text_is_not(app, tmp_path):
+    from minigecko.ui.widgets.pld_text_area import PldTextArea
+    notes = tmp_path / "notes.txt"
+    notes.write_text("GAL16V8\nplain words\n")
+    async with app.run_test(size=(120, 36)) as pilot:
+        await pilot.pause(0.5)
+        _load(app, JED.parent / "gates_16v8.pld")
+        await pilot.pause(0.5)
+        view = app.query_one("#jed-view", PldTextArea)
+        assert view.pld and view._highlights[0]  # Textual still builds colours through our hook
+        view.insert("; new\n", (0, 0))
+        await pilot.pause(0.1)
+        assert view._highlights[0]  # rebuilt after an edit
+        _load(app, notes)
+        await pilot.pause(0.5)
+        assert not view.pld and not any(view._highlights.values())

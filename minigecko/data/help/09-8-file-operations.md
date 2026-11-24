@@ -37,6 +37,11 @@ After a file is opened:
 A `.pld` source and any plain-text file open for editing, with line numbers.
 A `.jed`, a `.chp` and data read from a chip are read-only.
 
+A `.pld` is coloured as GALasm or CUPL, whichever its first lines say:
+comments, keywords such as `DESCRIPTION` and `Device`, operators, suffixes
+such as `.R` and `.OE`, and `NC`, `GND` and `VCC`. Its pane title names the
+compiler `F9` will use.
+
 While you type in the text, letter keys go into the text. Press `Escape` (or
 `Tab`) to leave it, so that `f`, `s`, `d` and the other keys work again.
 

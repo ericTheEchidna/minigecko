@@ -25,6 +25,7 @@ from minigecko.ui.modals.help_screen import is_manual_cached, load_manual_text
 from minigecko.ui.panels import ActionLogPanel, HexPanel, ICInfoPanel
 from minigecko.ui.state import _load_state, _save_state
 from minigecko.ui.widgets import HResizeHandle, VResizeHandle
+from minigecko.ui.widgets.pld_text_area import PldTextArea
 
 logger = logging.getLogger(__name__)
 
@@ -208,7 +209,7 @@ class MinigeckoApp(App):
                     pair.display = False
                     with Vertical(id="jed-left"):
                         yield Static("Fuse map (.jed)", id="jed-title", classes="pane-title")
-                        yield TextArea("", read_only=True, id="jed-view")
+                        yield PldTextArea("", read_only=True, id="jed-view")
                     yield HResizeHandle("jed-left", id="jed-split")
                     with Vertical(id="jed-right"):
                         yield Static("Equations", id="eqn-title", classes="pane-title")
@@ -419,6 +420,8 @@ class MinigeckoApp(App):
             view = self.query_one("#jed-view", TextArea)
             view.read_only = not editable
             view.show_line_numbers = editable  # compiler errors name a line
+            # Colour a .pld source; must be set before load_text builds the colours.
+            view.pld = editable and bool(self._data_path) and self._data_path.suffix.lower() == ".pld"
             view.load_text(text)
             self._update_text_title()
         if text is not None and not solo:
