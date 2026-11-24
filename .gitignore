@@ -44,6 +44,7 @@ Thumbs.db
 *.bin
 *.hex
 *.jed
+!tests/data/jed/*.jed
 *.svf
 dump_*.bin
 test_output/

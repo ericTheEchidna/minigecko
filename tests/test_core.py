@@ -361,3 +361,70 @@ def test_empty_socket_many_pins_says_seat_a_chip(monkeypatch):
     monkeypatch.setattr(mp, "_run", lambda args, **k: many)
     assert mp.checked_blank_check("AT28C64") == (
         "error", "no contact on 25 pins: is a chip seated?")
+
+
+JED_DIR = Path(__file__).parent / "data" / "jed"
+
+
+class TestJedec:
+    """JEDEC files are checked against the chip before minipro sees them."""
+
+    def test_reads_fuse_count_device_and_checksum(self):
+        from minigecko.core.jedec import parse_jed
+        jed = parse_jed((JED_DIR / "counter_16v8.jed").read_text())
+        assert (jed.device, jed.fuse_count) == ("GAL16V8", 2194)
+        assert jed.declared_checksum == jed.fuse_checksum == 0x3E11
+
+    def test_wincupl_file_checksum_matches(self):
+        from minigecko.core.jedec import parse_jed
+        jed = parse_jed((JED_DIR / "forbin80_cf_22v10.jed").read_text(errors="replace"))
+        assert (jed.device, jed.fuse_count) == ("g22v10", 5892)
+        assert jed.declared_checksum == jed.fuse_checksum
+
+    def test_16v8_file_fits_atf16v8b(self):
+        from minigecko.core.jedec import check_jed_for_chip
+        assert check_jed_for_chip(JED_DIR / "counter_16v8.jed", "ATF16V8B", 2194) is None
+
+    def test_22v10_file_refused_for_16v8(self):
+        from minigecko.core.jedec import check_jed_for_chip
+        why = check_jed_for_chip(JED_DIR / "forbin80_cf_22v10.jed", "ATF16V8B", 2194)
+        assert "5892 fuses" in why and "ATF16V8B has 2194" in why and "g22v10" in why
+
+    def test_damaged_checksum_refused(self):
+        from minigecko.core.jedec import check_jed_for_chip
+        why = check_jed_for_chip(JED_DIR / "bad_checksum_22v10.jed", "GAL22V10", 5892)
+        assert "damaged" in why and "0x4432" in why and "0x4478" in why
+
+    def test_not_a_jed_file(self, tmp_path):
+        from minigecko.core.jedec import check_jed_for_chip
+        f = tmp_path / "rom.jed"
+        f.write_bytes(b"\xff" * 64)
+        assert "no fuse count" in check_jed_for_chip(f, "ATF16V8B", 2194)
+
+
+class TestPldFormat:
+    def _capture(self, monkeypatch):
+        from minigecko.core import minipro as mp
+        calls = []
+        monkeypatch.setattr(mp, "_run", lambda args, **k: calls.append(args) or MiniproResult(ok=True))
+        return mp, calls
+
+    def test_pld_picks_jed_and_sends_no_format_flag(self, monkeypatch):
+        mp, calls = self._capture(monkeypatch)
+        assert mp.format_for_device("ATF16V8B") == "JED"
+        assert mp.format_for_device("AT28C64") == "BIN"
+        assert mp.write_device("ATF16V8B", JED_DIR / "counter_16v8.jed").ok
+        assert calls == [["-p", "ATF16V8B", "-w", str(JED_DIR / "counter_16v8.jed"), "-y"]]
+
+    def test_mismatched_jed_never_reaches_minipro(self, monkeypatch):
+        mp, calls = self._capture(monkeypatch)
+        r = mp.write_device("ATF16V8B", JED_DIR / "forbin80_cf_22v10.jed")
+        assert not r.ok and r.data["refused"] and "Refused:" in r.output
+        r = mp.verify_device("ATF16V8B", JED_DIR / "forbin80_cf_22v10.jed")
+        assert not r.ok and r.data["refused"]
+        assert calls == []
+
+    def test_ihex_still_sends_format_flag(self, monkeypatch):
+        mp, calls = self._capture(monkeypatch)
+        mp.read_device("AT28C64", Path("out.hex"), format="IHEX")
+        assert calls[0][-3:] == ["-f", "ihex", "-y"]

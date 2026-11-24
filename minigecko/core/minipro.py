@@ -272,11 +272,49 @@ def list_devices(filter_str: str = "") -> list[ChipDevice]:
     return devices
 
 
+FORMATS = ("BIN", "IHEX", "JED")
+
+
+def format_for_device(device: str) -> str:
+    """File format MiniGecko uses for *device*: JED for PLDs, BIN otherwise."""
+    from minigecko.core.device_db import TYPE_PLD, get_device
+
+    entry = get_device(device) or {}
+    return "JED" if entry.get("type") == TYPE_PLD else "BIN"
+
+
+def _format_args(device: str, format: str | None) -> tuple[str, list[str]]:
+    """Resolve *format* (None = by device type) and the minipro flags it needs.
+
+    BIN is minipro's default. For PLD profiles minipro reads and writes JEDEC
+    by itself, and ``-f`` only takes ihex/srec, so JED also sends no flag.
+    """
+    fmt = (format or format_for_device(device)).upper()
+    if fmt not in FORMATS:
+        raise ValueError(f"unknown format {format!r}; expected one of {FORMATS}")
+    return fmt, (["-f", "ihex"] if fmt == "IHEX" else [])
+
+
+def _refuse_unfit_jed(device: str, path: Path) -> MiniproResult | None:
+    """A failed result, without running minipro, when *path* does not fit *device*.
+
+    minipro only warns about a fuse-count mismatch and then writes anyway.
+    """
+    from minigecko.core.device_db import get_device
+    from minigecko.core.jedec import check_jed_for_chip
+
+    entry = get_device(device) or {}
+    reason = check_jed_for_chip(path, device, entry.get("code_memory_size") or 0)
+    if reason is None:
+        return None
+    return MiniproResult(ok=False, stderr=f"Refused: {reason}\n", data={"refused": True})
+
+
 def read_device(
     device: str,
     output_path: Path,
     *,
-    format: str = "BIN",
+    format: str | None = None,
     override_id: bool = True,
     progress_cb: ProgressCallback = None,
 ) -> MiniproResult:
@@ -286,12 +324,11 @@ def read_device(
     Args:
         device:      minipro device string, e.g. "AT28C256@DIP28"
         output_path: destination file
-        format:      "BIN" (default, no -f needed) or "IHEX"
+        format:      "BIN", "IHEX" or "JED"; None picks JED for PLDs, else BIN
         override_id: pass -y to ignore chip ID mismatch (default True)
     """
-    args = ["-p", device, "-r", str(output_path)]
-    if format.upper() != "BIN":
-        args += ["-f", format.lower()]
+    _fmt, fmt_args = _format_args(device, format)
+    args = ["-p", device, "-r", str(output_path)] + fmt_args
     if override_id:
         args.append("-y")
     return _run(args, progress_cb=progress_cb)
@@ -301,7 +338,7 @@ def write_device(
     device: str,
     input_path: Path,
     *,
-    format: str = "BIN",
+    format: str | None = None,
     verify: bool = True,
     skip_erase: bool = False,
     progress_cb: ProgressCallback = None,
@@ -312,13 +349,18 @@ def write_device(
     Args:
         device:      minipro device string
         input_path:  source file
-        format:      "BIN" or "IHEX"
+        format:      "BIN", "IHEX" or "JED"; None picks JED for PLDs, else BIN
         verify:      run verify pass after write (default True)
         skip_erase:  skip erase before write (default False)
+
+    A JED file that does not fit *device* is refused before minipro runs.
     """
-    args = ["-p", device, "-w", str(input_path), "-y"]
-    if format.upper() != "BIN":
-        args += ["-f", format.lower()]
+    fmt, fmt_args = _format_args(device, format)
+    if fmt == "JED":
+        refused = _refuse_unfit_jed(device, input_path)
+        if refused is not None:  # a failed MiniproResult is falsy
+            return refused
+    args = ["-p", device, "-w", str(input_path), "-y"] + fmt_args
     if not verify:
         args.append("-v")  # --skip_verify (-P would turn write protect ON)
     if skip_erase:
@@ -326,12 +368,16 @@ def write_device(
     return _run(args, progress_cb=progress_cb)
 
 
-def verify_device(device: str, reference_path: Path, *, format: str = "BIN") -> MiniproResult:
-    """Verify device contents against *reference_path*."""
-    args = ["-p", device, "-m", str(reference_path), "-y"]
-    if format.upper() != "BIN":
-        args += ["-f", format.lower()]
-    return _run(args)
+def verify_device(
+    device: str, reference_path: Path, *, format: str | None = None
+) -> MiniproResult:
+    """Verify device contents against *reference_path* (format as in write_device)."""
+    fmt, fmt_args = _format_args(device, format)
+    if fmt == "JED":
+        refused = _refuse_unfit_jed(device, reference_path)
+        if refused is not None:  # a failed MiniproResult is falsy
+            return refused
+    return _run(["-p", device, "-m", str(reference_path), "-y"] + fmt_args)
 
 
 def erase_device(device: str, progress_cb: ProgressCallback = None) -> MiniproResult:
