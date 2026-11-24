@@ -57,6 +57,12 @@ While you type in the text, letter keys go into the text. Press `Escape` (or
   command, which `y` copies and which runs unchanged in a terminal. CUPL
   reads ASCII only, so MiniGecko points at any other character before
   WinCUPL runs.
+- `o` (**Options**) chooses which files each compiler writes besides the
+  `.jed`, WinCUPL's minimisation and the Wine prefix that holds WinCUPL. By
+  default WinCUPL writes the `.doc` (equations, product-term use and fuse
+  plot) and Galette the `.chp` pinout. Galette's security fuse is off unless
+  you turn it on: a GAL with that fuse set cannot be read or verified until
+  it is erased.
 
 Before an action would throw away unsaved edits (opening another file,
 reading a chip, quitting), MiniGecko warns you. Do the same thing again to

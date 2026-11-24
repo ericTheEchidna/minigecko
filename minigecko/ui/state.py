@@ -15,6 +15,7 @@ _DEFAULT_STATE: dict = {
     "last_directory": str(Path.home()),
     "minipro_path": "",  # empty = find on PATH; set to absolute path to override
     "wincupl_prefix": "",  # Wine prefix holding WinCUPL; empty = ~/.wine-cupl
+    "compiler_options": {},  # Galette / WinCUPL choices; missing keys use core.pld defaults
 }
 
 

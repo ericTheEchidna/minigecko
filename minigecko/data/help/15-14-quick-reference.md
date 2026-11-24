@@ -20,6 +20,7 @@
 | `Ctrl+S` | Save edits to the open file |
 | `F12` | Save as: save the loaded data under a new name |
 | `F9` | Compile the open `.pld` with Galette or WinCUPL, by its language (saves first) |
+| `o` | Options: which files Galette and WinCUPL write, minimisation, Wine prefix |
 | `1` / `2` | Show the Chip / Data tab |
 | `s` | Open chip selector |
 | `d` | Open IC operations (requires chip selected) |

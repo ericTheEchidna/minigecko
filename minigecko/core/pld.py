@@ -36,13 +36,77 @@ UNKNOWN_LANGUAGE = (
 _GALETTE_ERROR_RE = re.compile(r"Error in line (\d+):\s*(.*)")
 
 # WinCUPL under Wine, run as Eric's Forbin80 `pcb/cupl` and Frances `tools/cupl`
-# scripts run it. -j JEDEC, -n name outputs after the source, -a absolute
-# (WinSim), -x expanded product terms, -f fuse plot, -e expanded macros,
-# -m1 quick minimisation. Outputs land beside the source: .jed, .doc
-# (equations, fuse plot, product-term use), .abs, .sim, .mx.
+# scripts run it: -j JEDEC and -n (name outputs after the source) always, the
+# rest from COMPILER_OPTIONS. What each WinCUPL flag writes (probed 2026-11-24,
+# WinCUPL's own help text in cupl.exe): -a .abs + .sim (for the simulator),
+# -e .mx (expanded macros), -x .doc with expanded product terms, -f fuse plot
+# in the .doc; with neither -x nor -f there is no .doc. -m0..-m4 minimisation.
 _CUPL_DIR = r"C:\Wincupl\Shared"
-_CUPL_FLAGS = ["-j", "-n", "-a", "-x", "-f", "-e", "-m1"]
 _DEFAULT_WINE_PREFIX = Path.home() / ".wine-cupl"
+
+# Compiler options, as UI state stores them. Defaults agreed with Eric
+# 2026-11-24: WinCUPL writes .jed and .doc; Galette writes .jed and .chp; the
+# security fuse stays off.
+DEFAULT_COMPILER_OPTIONS: dict[str, dict] = {
+    "galette": {"chp": True, "fus": False, "pin": False, "secure": False},
+    "wincupl": {
+        "doc_equations": True,   # -x
+        "doc_fuse_plot": True,   # -f
+        "simulator": False,      # -a: .abs and .sim
+        "macros": False,         # -e: .mx
+        "minimize": 1,           # -m0 … -m4
+    },
+}
+MINIMIZE_LEVELS = {  # WinCUPL's own words, from cupl.exe
+    0: "None (no logic reduction)",
+    1: "Quick (default; lowest memory use, fastest)",
+    2: "Quine-McCluskey (most memory, slowest)",
+    3: "Presto (a trade-off between memory and speed)",
+    4: "Espresso (much memory, slow; good for fitter designs)",
+}
+_options: dict[str, dict] = {k: dict(v) for k, v in DEFAULT_COMPILER_OPTIONS.items()}
+
+
+def set_compiler_options(options: dict) -> None:
+    """Use *options* (as stored in UI state); keys it lacks keep their defaults."""
+    global _options
+    _options = {
+        tool: {**defaults, **(options or {}).get(tool, {})}
+        for tool, defaults in DEFAULT_COMPILER_OPTIONS.items()
+    }
+
+
+def galette_flags() -> list[str]:
+    """Galette's flags for the current options (it writes .jed always)."""
+    o = _options["galette"]
+    flags = [] if o["chp"] else ["-c"]
+    flags += [] if o["fus"] else ["-f"]
+    flags += [] if o["pin"] else ["-p"]
+    return flags + (["-s"] if o["secure"] else [])
+
+
+def galette_outputs() -> list[str]:
+    o = _options["galette"]
+    return [".jed"] + [f".{k}" for k in ("chp", "fus", "pin") if o[k]]
+
+
+def wincupl_flags() -> list[str]:
+    """WinCUPL's flags for the current options."""
+    o = _options["wincupl"]
+    flags = ["-j", "-n"]
+    flags += ["-a"] if o["simulator"] else []
+    flags += ["-x"] if o["doc_equations"] else []
+    flags += ["-f"] if o["doc_fuse_plot"] else []
+    flags += ["-e"] if o["macros"] else []
+    return flags + [f"-m{int(o['minimize'])}"]
+
+
+def wincupl_outputs() -> list[str]:
+    o = _options["wincupl"]
+    outputs = [".jed"]
+    outputs += [".doc"] if o["doc_equations"] or o["doc_fuse_plot"] else []
+    outputs += [".abs", ".sim"] if o["simulator"] else []
+    return outputs + ([".mx"] if o["macros"] else [])
 _wine_prefix: Path | None = None  # None = _DEFAULT_WINE_PREFIX
 
 # "105:PAGE_CK = = …" names the line; "[0007ca] invalid syntax:  =" the error.
@@ -88,10 +152,8 @@ class CompileResult:
 def compile_pld(path: Path) -> CompileResult:
     """Compile *path* with the tool its language needs, beside the source.
 
-    Galette writes ``<name>.jed`` and ``<name>.chp`` next to *path*; its
-    ``.fus`` and ``.pin`` outputs are switched off. MiniGecko never passes
-    ``-s``, which would set the security fuse. WinCUPL writes ``.jed``,
-    ``.doc``, ``.abs``, ``.sim`` and ``.mx`` (see ``_CUPL_FLAGS``).
+    Which files each tool writes, and whether Galette sets the security
+    fuse, follow the compiler options (see ``set_compiler_options``).
     """
     from minigecko.core.minipro import announce
 
@@ -108,7 +170,7 @@ def compile_pld(path: Path) -> CompileResult:
     exe = shutil.which("galette")
     if exe is None:
         return CompileResult(False, GALETTE_MISSING)
-    args = ["-f", "-p", str(path)]
+    args = galette_flags() + [str(path)]
     announce(shlex.join(["galette"] + args))
     try:
         out = subprocess.run([exe] + args, capture_output=True, text=True, timeout=30)
@@ -116,7 +178,7 @@ def compile_pld(path: Path) -> CompileResult:
         return CompileResult(False, f"Galette failed: {exc}")
     report = (out.stdout + out.stderr).strip()
     if out.returncode == 0:
-        return CompileResult(True, f"wrote {path.stem}.jed and {path.stem}.chp")
+        return CompileResult(True, _wrote(path, galette_outputs()))
     m = _GALETTE_ERROR_RE.search(report)
     if m:
         return CompileResult(False, f"line {m.group(1)}: {m.group(2)}", int(m.group(1)))
@@ -154,7 +216,7 @@ def _compile_cupl(path: Path, text: str) -> CompileResult:
         "WINEDEBUG": "-all",
         "LIBCUPL": _CUPL_DIR + r"\cupl.dl",
     }
-    argv = ["wine", _CUPL_DIR + r"\cupl.exe", *_CUPL_FLAGS, path.stem]
+    argv = ["wine", _CUPL_DIR + r"\cupl.exe", *wincupl_flags(), path.stem]
     announce(
         f"cd {shlex.quote(str(folder))} && "
         + " ".join(f"{k}={shlex.quote(v)}" for k, v in env_vars.items())
@@ -177,10 +239,7 @@ def _compile_cupl(path: Path, text: str) -> CompileResult:
     report = out.stdout + out.stderr
     jed = path.with_suffix(".jed")
     if out.returncode == 0 and jed.exists() and jed.stat().st_mtime >= started - 1:
-        return CompileResult(True, (
-            f"wrote {jed.name}, and {path.stem}.doc with the equations, fuse plot "
-            "and product-term use"
-        ))
+        return CompileResult(True, _wrote(path, wincupl_outputs()))
     error = _CUPL_ERROR_RE.search(report)
     line = _CUPL_LINE_RE.search(report)
     message = error.group(1).strip() if error else f"WinCUPL exited with status {out.returncode}"
@@ -188,3 +247,10 @@ def _compile_cupl(path: Path, text: str) -> CompileResult:
     if line:
         return CompileResult(False, f"line {line.group(1)}: {message}", int(line.group(1)))
     return CompileResult(False, message)
+
+
+def _wrote(path: Path, suffixes: list[str]) -> str:
+    """'wrote x.jed and x.chp' for the outputs the options asked for."""
+    names = [path.stem + sfx for sfx in suffixes]
+    listed = names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+    return f"wrote {listed}"

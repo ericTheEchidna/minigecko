@@ -13,6 +13,7 @@ Global shortcuts:
 | `Ctrl+S` | Save edits to the open file (after a chip read: Save as) |
 | `F12` | Save as: save the loaded data under a new name |
 | `F9` | Compile the open `.pld` with Galette or WinCUPL, by its language (saves first) |
+| `o` | Options: which files Galette and WinCUPL write, minimisation, Wine prefix |
 | `Escape` | Leave the text you are editing, so letter keys work again |
 | `s` | Open chip selection |
 | `d` | Open IC operations for the selected chip |

@@ -71,6 +71,7 @@ class MinigeckoApp(App):
         Binding("s", "select_ic", "Select IC"),
         Binding("d", "ic_ops", "IC Ops"),
         Binding("h", "help", "Help"),
+        Binding("o", "options", "Options"),
         Binding("y", "copy_command", "Copy command"),
         Binding("1","show_tab('tab-chip')", "Chip", show=False),
         Binding("2", "show_tab('tab-data')", "Data", show=False),
@@ -199,9 +200,10 @@ class MinigeckoApp(App):
         from minigecko.core import set_binary_path, set_command_listener
 
         set_binary_path(self._state.get("minipro_path", ""))
-        from minigecko.core.pld import set_wine_prefix
+        from minigecko.core.pld import set_compiler_options, set_wine_prefix
 
         set_wine_prefix(self._state.get("wincupl_prefix", ""))
+        set_compiler_options(self._state.get("compiler_options", {}))
         set_command_listener(self._on_command)
         self._poll_programmer()
         self._preload_device_db()
@@ -578,6 +580,27 @@ class MinigeckoApp(App):
         self._discard_armed = None
         self.log_action(f"[green]SAVE  OK[/]  {self._data_path}")
         return True
+
+    def action_options(self) -> None:
+        """Choose what Galette and WinCUPL write, and how."""
+        from minigecko.core.pld import set_compiler_options, set_wine_prefix
+        from minigecko.ui.modals import OptionsScreen
+
+        def _on_close(result: tuple[dict, str] | None) -> None:
+            if result is None:
+                return
+            options, prefix = result
+            self._state["compiler_options"] = options
+            self._state["wincupl_prefix"] = prefix
+            _save_state(self._state)
+            set_compiler_options(options)
+            set_wine_prefix(prefix)
+            self.log_action("[green]OPTIONS  saved[/]  compilers use them from the next F9")
+
+        self.push_screen(
+            OptionsScreen(self._state.get("compiler_options", {}), self._state.get("wincupl_prefix", "")),
+            _on_close,
+        )
 
     def action_compile(self) -> None:
         """Save the open .pld if edited, then compile it beside itself."""

@@ -245,3 +245,61 @@ async def test_f9_waits_for_a_running_compile(app, tmp_path, monkeypatch):
         await pilot.press("f9")  # free again afterwards
         await pilot.pause(1.0)
         assert len(calls) == 2
+
+
+# --- Compiler options (MINIGECKO-01B) --------------------------------------
+
+@pytest.fixture
+def default_options():
+    from minigecko.core import pld
+    pld.set_compiler_options({})
+    yield pld
+    pld.set_compiler_options({})
+
+
+def test_default_options_write_jed_doc_and_jed_chp(default_options):
+    pld = default_options
+    assert pld.galette_flags() == ["-f", "-p"]  # no .fus, no .pin, no security fuse
+    assert pld.galette_outputs() == [".jed", ".chp"]
+    assert pld.wincupl_flags() == ["-j", "-n", "-x", "-f", "-m1"]
+    assert pld.wincupl_outputs() == [".jed", ".doc"]
+
+
+def test_each_option_changes_its_flag(default_options):
+    pld = default_options
+    pld.set_compiler_options({"galette": {"chp": False, "pin": True, "secure": True}})
+    assert pld.galette_flags() == ["-c", "-f", "-s"]
+    assert pld.galette_outputs() == [".jed", ".pin"]
+    pld.set_compiler_options({"wincupl": {"simulator": True, "macros": True, "minimize": 3}})
+    assert pld.wincupl_flags() == ["-j", "-n", "-a", "-x", "-f", "-e", "-m3"]
+    assert pld.wincupl_outputs() == [".jed", ".doc", ".abs", ".sim", ".mx"]
+    pld.set_compiler_options({"wincupl": {"doc_equations": False, "doc_fuse_plot": False}})
+    assert pld.wincupl_outputs() == [".jed"]  # neither -x nor -f: no .doc
+
+
+@needs_wincupl
+def test_wincupl_writes_only_what_the_options_ask_for(tmp_path, default_options):
+    src = _cupl_copy(tmp_path)
+    result = compile_pld(src)
+    assert result.ok and result.message == "wrote forbin80_mem.jed and forbin80_mem.doc"
+    assert sorted(p.suffix for p in tmp_path.iterdir()) == [".doc", ".jed", ".pld"]
+
+
+async def test_options_screen_saves_to_state(app, monkeypatch, default_options):
+    from textual.widgets import Checkbox, Select
+    saved: list[dict] = []
+    monkeypatch.setattr(app_shell, "_save_state", lambda state: saved.append(dict(state)))
+    async with app.run_test(size=(120, 50)) as pilot:
+        await pilot.pause(0.5)
+        await pilot.press("o")
+        await pilot.pause(0.3)
+        screen = app.screen
+        screen.query_one("#opt-wincupl-simulator", Checkbox).value = True
+        screen.query_one("#opt-wincupl-minimize", Select).value = 4
+        await pilot.pause(0.2)  # let the layout settle before clicking
+        await pilot.click("#opt-save")
+        await pilot.pause(0.3)
+        assert len(app.screen_stack) == 1
+    assert saved[-1]["compiler_options"]["wincupl"]["simulator"] is True
+    assert saved[-1]["compiler_options"]["wincupl"]["minimize"] == 4
+    assert default_options.wincupl_flags() == ["-j", "-n", "-a", "-x", "-f", "-m4"]

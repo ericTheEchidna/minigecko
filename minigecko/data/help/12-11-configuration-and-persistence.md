@@ -24,6 +24,7 @@ Fields stored in `state.json`:
 | `last_directory` | Home directory | Last directory opened in the file picker. |
 | `minipro_path` | `""` (empty) | Absolute path to the `minipro` binary. Empty means find it on `PATH`. |
 | `wincupl_prefix` | `""` (empty) | Wine prefix that holds WinCUPL (`drive_c/Wincupl/Shared/cupl.exe`). Empty means `~/.wine-cupl`. |
+| `compiler_options` | `{}` (defaults) | What Galette and WinCUPL write and how, as set on the Options screen (`o`). Missing entries use the defaults. |
 
 If the state file is missing, corrupt, or unreadable, MiniGecko falls back
 to built-in defaults and logs a warning. Panel sizes revert to defaults
