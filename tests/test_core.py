@@ -502,6 +502,24 @@ class TestDecompile:
         assert jedutil_device(5892, "GAL22V10") == "GAL22V10"
         assert jedutil_device(2195) is None
 
+    def test_galasm_pin_lists_give_names(self):
+        from minigecko.core.jedec import pin_names
+        names = pin_names((JED_DIR / "counter4_16v8.pld").read_text())
+        assert names[1] == ("Clock", False) and names[18] == ("Q0", False)
+        assert names[11] == ("OE", True)  # '/OE' is active low, named OE
+        assert 10 not in names and 20 not in names and 3 not in names  # GND, VCC, NC
+        # A pin list with the wrong count is not trusted.
+        assert pin_names("GAL16V8\nSig\nA B C\nD E F\n") == {}
+        # CUPL still reads its Pin lines.
+        assert pin_names("Device g22v10;\nPin 1 = !WR;\n") == {1: ("WR", True)}
+
+    @needs_jedutil
+    def test_galasm_source_names_the_equations(self):
+        from minigecko.core.jedec import decompile
+        view, note = decompile(JED_DIR / "gates_16v8.jed", "ATF16V8B")
+        assert "gates_16v8.pld" in note
+        assert "AND4 = A & B & C & D" in view and "NOTA = /A" in view
+
     def test_names_flip_active_low_pins(self):
         from minigecko.core.jedec import name_equations
         names = {1: ("WR", True), 4: ("A4", False), 20: ("ROM_CE", True)}

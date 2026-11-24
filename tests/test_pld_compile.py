@@ -122,4 +122,4 @@ async def test_f9_compile_reloads_the_equations(app, tmp_path):
         await pilot.press("f9")
         await pilot.pause(2.0)
         assert (tmp_path / "gates_16v8.jed").exists()
-        assert "o12 = i2 & i3" in app.query_one("#jed-eqn", TextArea).text
+        assert "AND = A & B" in app.query_one("#jed-eqn", TextArea).text  # named from the .pld

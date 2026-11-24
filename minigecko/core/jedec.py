@@ -159,13 +159,39 @@ _PIN_DECL_RE = re.compile(r"^\s*PIN\s+(\d+)\s*=\s*(!?)\s*([A-Za-z_]\w*)", re.IGN
 _TOKEN_RE = re.compile(r"(/?)\b(?:i|o|rf|r)(\d+)\b")
 
 
+_GALASM_PIN_COUNT = {"GAL16V8": 20, "GAL20V8": 24, "GAL22V10": 24, "GAL20RA10": 24}
+_GALASM_NOT_SIGNALS = {"NC", "GND", "VCC"}
+
+
 def pin_names(pld_text: str) -> dict[int, tuple[str, bool]]:
-    """``{pin: (name, active_low)}`` from a CUPL source's ``Pin N = [!]NAME`` lines."""
-    return {int(n): (name, bang == "!") for n, bang, name in _PIN_DECL_RE.findall(pld_text)}
+    """``{pin: (name, active_low)}`` from a PLD source.
+
+    CUPL declares ``Pin N = [!]NAME``. GALasm (Galette) lists the pins in two
+    lines after the chip and signature lines: pins 1 to n/2, then the rest;
+    a leading ``/`` marks a pin active low, as CUPL's ``!`` does.
+    """
+    from minigecko.core.pld import GALASM, pld_language
+
+    if pld_language(pld_text) != GALASM:
+        return {int(n): (name, bang == "!") for n, bang, name in _PIN_DECL_RE.findall(pld_text)}
+    lines = [ln.split(";", 1)[0].strip() for ln in pld_text.splitlines()]
+    lines = [ln for ln in lines if ln]  # comments and blank lines carry no pins
+    if len(lines) < 4:
+        return {}
+    pins = _GALASM_PIN_COUNT.get(lines[0].upper(), 0)
+    tokens = lines[2].split() + lines[3].split()
+    if len(tokens) != pins:
+        return {}  # not a pin list Galette would accept either
+    names: dict[int, tuple[str, bool]] = {}
+    for pin, token in enumerate(tokens, start=1):
+        name = token.lstrip("/")
+        if name.upper() not in _GALASM_NOT_SIGNALS:
+            names[pin] = (name, token.startswith("/"))
+    return names
 
 
 def name_equations(view: str, names: dict[int, tuple[str, bool]]) -> str:
-    """Put CUPL signal names into jedutil's equations.
+    """Put a source's signal names (CUPL or GALasm) into jedutil's equations.
 
     jedutil names pins by level (``/i1`` = pin 1 low). A pin declared
     ``!WR`` is asserted when low, so ``/i1`` becomes ``WR`` and ``i1`` ``/WR``,
