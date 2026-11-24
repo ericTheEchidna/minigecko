@@ -48,7 +48,7 @@ class ICInfoPanel(VerticalScroll):
     DEFAULT_CSS = """
     ICInfoPanel {
         width: 1fr;
-        height: 18;
+        height: 1fr;
         background: $surface;
         padding: 1 2;
     }

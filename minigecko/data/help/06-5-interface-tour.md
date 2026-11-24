@@ -10,30 +10,26 @@ operation, and review status.
 
 Main screen structure:
 
-- Header at the top, showing the application title and clock.
-- Hex panel on the left, used to display the currently loaded data buffer.
-- IC information panel on the upper right, showing details for the selected
-	device.
-- Action log panel on the lower right, showing status messages and progress.
+- Header at the top, showing the application title, programmer and clock.
+- Two tabs: **Chip** shows the selected chip's details; **Data** shows the
+	loaded file or chip read. Press `1` or `2`, or click a tab, to switch.
+- The action log below the tabs, visible on both, showing status messages and
+	progress.
 - Footer at the bottom, showing available key bindings.
 
 Layout behavior:
 
-- The hex panel stays hidden until you open a file or read a chip; until then
-	the information panel and action log use the full width.
-- The right side is split vertically into an information panel above and an
-	action log below.
-- The divider between left and right panels can be resized.
-- The divider between the IC information panel and the action log can also be
-	resized.
-- Panel size changes are saved and restored between sessions.
+- Selecting a chip shows the Chip tab. Opening a file or reading a chip shows
+	the Data tab.
+- The Data tab shows binary data as hex, and a `.jed` fuse file as text.
+- Drag the divider above the action log to make the log taller or shorter. Its
+	height is saved between sessions.
 
 Typical workflow on screen:
 
-1. Select a chip (`s`).
-2. Open or read data into the hex panel.
-3. Review chip metadata in the IC information panel.
-4. Run operations and monitor results in the action log.
+1. Select a chip (`s`); its details appear on the Chip tab.
+2. Open a file (`f`) or read the chip; the data appears on the Data tab.
+3. Run operations from IC Ops (`d`) and watch the results in the action log.
 
 ### 5.2 Keys in the Footer
 
@@ -43,10 +39,11 @@ selector. `d` opens the operations menu for the selected chip; it appears in the
 The selected chip's details show in the IC information panel. Programmer status
 shows in the application subtitle, and operation results in the action log.
 
-### 5.3 Hex Panel
+### 5.3 Data Tab
 
-The hex panel shows the contents of the currently loaded file or the most
-recent data read from a device.
+The Data tab shows the contents of the currently loaded file or the most
+recent data read from a device. A `.jed` fuse file is shown as text; anything
+else as a hex dump, described below.
 
 What appears in the panel:
 
@@ -82,9 +79,9 @@ Display limit:
 - If a file is larger than that limit, MiniGecko shows only the first portion
 	and appends a truncation notice.
 
-### 5.4 IC Info Panel
+### 5.4 Chip Tab
 
-The IC information panel shows metadata for the currently selected device and
+The Chip tab shows metadata for the currently selected device and
 helps you confirm that you picked the correct part before running operations.
 
 What it shows:

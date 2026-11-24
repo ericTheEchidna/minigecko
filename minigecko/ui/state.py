@@ -10,8 +10,7 @@ logger = logging.getLogger(__name__)
 
 _CONFIG_PATH = Path.home() / ".config" / "minigecko" / "state.json"
 _DEFAULT_STATE: dict = {
-    "hex_panel_width": 66,
-    "info_panel_height": 18,
+    "log_height": 12,
     "last_directory": str(Path.home()),
     "minipro_path": "",  # empty = find on PATH; set to absolute path to override
 }

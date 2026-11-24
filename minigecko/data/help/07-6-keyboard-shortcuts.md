@@ -14,6 +14,7 @@ Global shortcuts:
 | `s` | Open chip selection |
 | `d` | Open IC operations for the selected chip |
 | `h` | Open this manual |
+| `1` / `2` | Show the Chip / Data tab |
 | `Ctrl+D` | Toggle theme |
 | `Ctrl+Q` | Quit MiniGecko |
 | `Ctrl+P` | Open the command palette |

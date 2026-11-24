@@ -15,9 +15,8 @@ class HexPanel(Vertical):
 
     DEFAULT_CSS = """
     HexPanel {
-        width: 66; height: 1fr;
+        width: 1fr; height: 1fr;
         background: $surface;
-        border-right: solid $panel-darken-2;
         padding: 0 1;
     }
     HexPanel > #hex-header-row {

@@ -18,6 +18,7 @@
 | --- | --- |
 | `f` | Open file picker |
 | `Ctrl+S` | Save the loaded data to a file |
+| `1` / `2` | Show the Chip / Data tab |
 | `s` | Open chip selector |
 | `d` | Open IC operations (requires chip selected) |
 | `Ctrl+D` | Toggle dark / light theme |

@@ -10,8 +10,7 @@ from typing import ClassVar
 from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Horizontal, Vertical
-from textual.widgets import Footer, Header
+from textual.widgets import Footer, Header, Static, TabbedContent, TabPane, TextArea
 
 from minigecko import __version__
 from minigecko.ui.hexdump import _MAX_BYTES
@@ -19,7 +18,7 @@ from minigecko.ui.modals import ChipSelectScreen, FilePickerScreen, HelpScreen, 
 from minigecko.ui.modals.help_screen import is_manual_cached, load_manual_text
 from minigecko.ui.panels import ActionLogPanel, HexPanel, ICInfoPanel
 from minigecko.ui.state import _load_state, _save_state
-from minigecko.ui.widgets import ResizeHandle, VResizeHandle
+from minigecko.ui.widgets import VResizeHandle
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +29,10 @@ class MinigeckoApp(App):
     TITLE = f"minigecko v{__version__}"
 
     DEFAULT_CSS = """
-    #body { height: 1fr; }
-    #right-panel { width: 1fr; height: 1fr; }
+    #main-tabs { height: 1fr; }
+    #main-tabs TabPane { padding: 0; }
+    #data-empty { padding: 1 2; color: $text-muted; }
+    #jed-view { height: 1fr; border: none; }
     """
 
     BINDINGS: ClassVar[list[Binding]] = [
@@ -40,6 +41,8 @@ class MinigeckoApp(App):
         Binding("s", "select_ic", "Select IC"),
         Binding("d", "ic_ops", "IC Ops"),
         Binding("h", "help", "Help"),
+        Binding("1", "show_tab('tab-chip')", "Chip", show=False),
+        Binding("2", "show_tab('tab-data')", "Data", show=False),
         Binding("ctrl+d", "toggle_dark", "Theme", show=True),
         Binding("ctrl+q", "quit", "Quit", show=True),
     ]
@@ -97,29 +100,33 @@ class MinigeckoApp(App):
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
-        with Horizontal(id="body"):
-            panel = HexPanel()
-            panel.styles.width = self._state["hex_panel_width"]
-            panel.display = False  # hidden until data loads, so the log gets the width
-            yield panel
-            handle = ResizeHandle()
-            handle.display = False
-            yield handle
-            with Vertical(id="right-panel"):
+        # Chip work and data work are separate tabs; the log sits under both.
+        with TabbedContent(id="main-tabs"):
+            with TabPane("1 Chip", id="tab-chip"):
                 yield ICInfoPanel()
-                yield VResizeHandle()
-                yield ActionLogPanel()
+            with TabPane("2 Data", id="tab-data"):
+                yield Static(
+                    "No data loaded. Press f to open a file, or read a chip from IC Ops (d).",
+                    id="data-empty",
+                )
+                hex_panel = HexPanel()
+                hex_panel.display = False
+                yield hex_panel
+                jed = TextArea("", read_only=True, id="jed-view")
+                jed.display = False
+                yield jed
+        yield VResizeHandle()
+        yield ActionLogPanel()
         yield Footer()
 
     def on_mount(self) -> None:
-        self.query_one(ICInfoPanel).styles.height = self._state["info_panel_height"]
+        self.query_one(ActionLogPanel).styles.height = self._state["log_height"]
         from minigecko.core import set_binary_path
 
         set_binary_path(self._state.get("minipro_path", ""))
         self._poll_programmer()
         self._preload_device_db()
         self._preload_help_manual()
-        self.query_one("#hex-log").focus()
 
     @work(thread=True)
     def _poll_programmer(self) -> None:
@@ -182,15 +189,24 @@ class MinigeckoApp(App):
 
         self.push_screen(FilePickerScreen(start_path=start), _on_file)
 
+    def action_show_tab(self, tab_id: str) -> None:
+        self.query_one("#main-tabs", TabbedContent).active = tab_id
+
     @work(thread=True)
     def _load_hex(self, path: Path) -> None:
+        """Show *path* in the Data tab: a .jed as text, anything else as hex."""
         panel = self.query_one(HexPanel)
         self.call_from_thread(panel.clear)
 
         try:
             data = path.read_bytes()
         except OSError as exc:
-            self.log_action(f"[red]FILE  read error:[/]  {exc}")
+            self._log(f"[red]FILE  read error:[/]  {exc}")
+            return
+
+        if path.suffix.lower() == ".jed":
+            text = data.decode("ascii", errors="replace").replace("\x02", "").replace("\x03", "")
+            self.call_from_thread(self._show_data, None, text)
             return
 
         truncated = len(data) > _MAX_BYTES
@@ -198,27 +214,31 @@ class MinigeckoApp(App):
             data = data[:_MAX_BYTES]
             self._log(f"[yellow]FILE  truncated — showing first {_MAX_BYTES // 2**20} MB[/]")
 
-        self.call_from_thread(self._show_hex, data)
+        self.call_from_thread(self._show_data, data, None)
 
-    def _show_hex(self, data: bytes) -> None:
-        self.query_one(HexPanel).display = True
-        self.query_one(ResizeHandle).display = True
-        self.query_one(HexPanel).load(data)
+    def _show_data(self, data: bytes | None, text: str | None) -> None:
+        """Fill the Data tab with hex (*data*) or text (*text*) and switch to it."""
+        self.query_one("#data-empty").display = False
+        hex_panel = self.query_one(HexPanel)
+        jed = self.query_one("#jed-view", TextArea)
+        hex_panel.display = data is not None
+        jed.display = text is not None
+        if data is not None:
+            hex_panel.load(data)
+        if text is not None:
+            jed.load_text(text)
+        self.action_show_tab("tab-data")
 
-    def save_panel_width(self) -> None:
-        panel = self.query_one(HexPanel)
-        self._state["hex_panel_width"] = int(panel.styles.width.value)  # type: ignore[union-attr]
-        _save_state(self._state)
-
-    def save_info_panel_height(self) -> None:
-        panel = self.query_one(ICInfoPanel)
-        self._state["info_panel_height"] = int(panel.styles.height.value)  # type: ignore[union-attr]
+    def save_log_height(self) -> None:
+        panel = self.query_one(ActionLogPanel)
+        self._state["log_height"] = int(panel.styles.height.value)  # type: ignore[union-attr]
         _save_state(self._state)
 
     def _set_selected_ic(self, chip: str) -> None:
         self._selected_ic = chip
         self.refresh_bindings()  # shows the IC Ops key in the footer
         self.query_one(ICInfoPanel).show(chip)
+        self.action_show_tab("tab-chip")
         self.log_action(f"[green]IC  selected[/]  {chip}")
 
     def _open_chip_select(self) -> None:
