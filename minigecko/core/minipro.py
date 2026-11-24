@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import threading
@@ -205,12 +206,37 @@ if os.environ.get("MINIGECKO_EMULATE", "").strip() == "1":
     _transport = _emulate_transport
 
 
+# Called with the shell command line of every minipro run, before it starts.
+_command_listener: Optional[Callable[[str], None]] = None
+
+
+def set_command_listener(listener: Optional[Callable[[str], None]]) -> None:
+    """Have *listener* receive each minipro command line (None = stop)."""
+    global _command_listener
+    _command_listener = listener
+
+
+def command_line(args: list[str]) -> str:
+    """The shell-quoted command that runs minipro with *args* in a terminal.
+
+    Names the binary as the user would type it: the configured path when one
+    is set, else plain ``minipro`` from PATH.
+    """
+    return shlex.join([_override_binary or "minipro"] + args)
+
+
 def _run(
     args: list[str],
     input_data: Optional[bytes] = None,
     progress_cb: ProgressCallback = None,
 ) -> MiniproResult:
-    """Dispatch to the active transport (real subprocess or emulator)."""
+    """Dispatch to the active transport (real subprocess or emulator).
+
+    Every run, emulated or real, first reports its command line, so the log
+    shows a command that does the same thing in a terminal.
+    """
+    if _command_listener is not None:
+        _command_listener(command_line(args))
     return _transport(args, input_data, progress_cb)
 
 

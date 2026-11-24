@@ -4,9 +4,13 @@ from __future__ import annotations
 
 import logging
 import os
+import shutil
+import subprocess
+import threading
 from pathlib import Path
 from typing import ClassVar
 
+from rich.markup import escape
 from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -45,7 +49,8 @@ class MinigeckoApp(App):
         Binding("s", "select_ic", "Select IC"),
         Binding("d", "ic_ops", "IC Ops"),
         Binding("h", "help", "Help"),
-        Binding("1", "show_tab('tab-chip')", "Chip", show=False),
+        Binding("y", "copy_command", "Copy command"),
+        Binding("1","show_tab('tab-chip')", "Chip", show=False),
         Binding("2", "show_tab('tab-data')", "Data", show=False),
         Binding("ctrl+d", "toggle_dark", "Theme", show=True),
         Binding("ctrl+q", "quit", "Quit", show=True),
@@ -59,6 +64,37 @@ class MinigeckoApp(App):
         self._data_path: Path | None = None
         self._read_from: str | None = None  # chip the loaded data was read from
         self._selected_ic: str | None = None
+        self._last_command: str | None = None  # last minipro command line run
+
+    def _on_minipro_command(self, command: str) -> None:
+        """Log a minipro command line; called from any thread before it runs."""
+        if threading.current_thread() is threading.main_thread():
+            self._log_command(command)
+        else:
+            self.call_from_thread(self._log_command, command)
+
+    def _log_command(self, command: str) -> None:
+        self._last_command = command
+        self.log_action(f"[dim]$ {escape(command)}[/]")
+
+    def action_copy_command(self) -> None:
+        """Copy the last minipro command line, ready to paste into a terminal."""
+        if not self._last_command:
+            self.notify("No minipro command has run yet.")
+            return
+        self.copy_to_clipboard(self._last_command)  # OSC 52, for terminals that support it
+        xclip = shutil.which("xclip")
+        if xclip:  # X11 clipboard for terminals that ignore OSC 52
+            try:
+                subprocess.run(
+                    [xclip, "-selection", "clipboard"],
+                    input=self._last_command.encode(), timeout=2, check=False,
+                    # xclip stays behind to own the selection: keep it off our streams
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                logger.debug("xclip failed: %s", exc)
+        self.notify(f"Copied: {self._last_command}", markup=False)
 
     def log_action(self, message: str) -> None:
         """Write a timestamped entry to the action log from the main thread."""
@@ -131,12 +167,18 @@ class MinigeckoApp(App):
 
     def on_mount(self) -> None:
         self.query_one(ActionLogPanel).styles.height = self._state["log_height"]
-        from minigecko.core import set_binary_path
+        from minigecko.core import set_binary_path, set_command_listener
 
         set_binary_path(self._state.get("minipro_path", ""))
+        set_command_listener(self._on_minipro_command)
         self._poll_programmer()
         self._preload_device_db()
         self._preload_help_manual()
+
+    def on_unmount(self) -> None:
+        from minigecko.core import set_command_listener
+
+        set_command_listener(None)  # the listener is module-wide; drop this app's
 
     @work(thread=True)
     def _poll_programmer(self) -> None:

@@ -19,5 +19,6 @@ Select a topic:
 - [14. Quick Reference](15-14-quick-reference.md)
 - [15. Revision History](16-15-revision-history.md)
 - [Appendix A: Fill Progress Checklist](17-appendix-a-fill-progress-checklist.md)
+- [Appendix B: minipro Options](18-minipro-options.md)
 
 Press `Escape` to close help.
