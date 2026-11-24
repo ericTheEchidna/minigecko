@@ -16,7 +16,8 @@ File picker behavior:
 - It starts in the last directory you used, or your home directory if no
 	previous location has been saved.
 - The current directory is shown as a navigable tree.
-- The `↑ ..` control moves up to the parent directory.
+- Click `↑ Up a folder` at the top, or press `Backspace`, to move up to the
+  parent folder. The line also shows the folder you are in.
 
 How to choose a file:
 
