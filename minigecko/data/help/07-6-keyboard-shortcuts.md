@@ -13,8 +13,7 @@ Global shortcuts:
 | `s` | Open chip selection |
 | `d` | Open IC operations for the selected chip |
 | `i` | Identify a chip whose markings are unreadable |
-| `v` | Tools action |
-| `h` | Help action |
+| `h` | Open this manual |
 | `Ctrl+D` | Toggle theme |
 | `Ctrl+Q` | Quit MiniGecko |
 | `Ctrl+P` | Open the command palette |
@@ -22,8 +21,6 @@ Global shortcuts:
 Notes:
 
 - `d` only works after a chip has been selected.
-- `v` and `h` are bound at the application level, but their practical value
-	depends on the current implementation behind those actions.
 
 Chip selection dialog:
 

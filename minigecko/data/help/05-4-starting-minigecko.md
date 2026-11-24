@@ -27,7 +27,7 @@ Alternative launch form (module mode):
 python -m minigecko
 ```
 
-On successful startup, you should see the MiniGecko TUI with header, toolbar,
+On successful startup, you should see the MiniGecko TUI with header,
 hex panel, IC information panel, and action log.
 
 To exit the application, use `Ctrl+Q`.

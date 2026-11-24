@@ -11,8 +11,6 @@ operation, and review status.
 Main screen structure:
 
 - Header at the top, showing the application title and clock.
-- Toolbar directly below the header, containing the chip-selection and IC
-	operations controls.
 - Hex panel on the left, used to display the currently loaded data buffer.
 - IC information panel on the upper right, showing details for the selected
 	device.
@@ -31,37 +29,19 @@ Layout behavior:
 
 Typical workflow on screen:
 
-1. Select a chip from the toolbar.
+1. Select a chip (`s`) or identify one (`i`).
 2. Open or read data into the hex panel.
 3. Review chip metadata in the IC information panel.
 4. Run operations and monitor results in the action log.
 
-### 5.2 Toolbar
+### 5.2 Keys in the Footer
 
-The toolbar is the main control strip at the top of the application. It gives
-you direct access to device selection and chip-specific operations.
+The footer lists every key that works on the main screen. `s` opens the chip
+selector and `i` the identify wizard. `d` opens the operations menu for the
+selected chip; it appears in the footer only once a chip is selected.
 
-Toolbar controls:
-
-- `Selected IC: —` opens the chip selector.
-- `IC Ops [d]` opens the operations menu for the currently selected device.
-
-Behavior:
-
-- On startup, no chip is selected, so the toolbar shows `Selected IC: —`.
-- The `IC Ops` control is disabled until you choose a chip.
-- After selection, the chip button updates to show the selected part name.
-- Once a chip is selected, the `IC Ops` control becomes active.
-
-How to use it:
-
-- Click `Selected IC: —` or press `s` to open device selection.
-- After selecting a device, click `IC Ops [d]` or press `d` to open the
-	available actions for that chip.
-
-The toolbar works together with the subtitle and action log: programmer status
-is shown in the application subtitle, while operation results appear in the
-action log panel.
+The selected chip's details show in the IC information panel. Programmer status
+shows in the application subtitle, and operation results in the action log.
 
 ### 5.3 Hex Panel
 

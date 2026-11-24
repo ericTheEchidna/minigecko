@@ -11,7 +11,7 @@ from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
-from textual.widgets import Footer, Header, Static, TabbedContent, TabPane
+from textual.widgets import Footer, Header
 
 from minigecko import __version__
 from minigecko.ui.hexdump import _MAX_BYTES
@@ -19,7 +19,6 @@ from minigecko.ui.modals import ChipSelectScreen, FilePickerScreen, HelpScreen, 
 from minigecko.ui.modals.help_screen import is_manual_cached, load_manual_text
 from minigecko.ui.panels import ActionLogPanel, HexPanel, ICInfoPanel
 from minigecko.ui.state import _load_state, _save_state
-from minigecko.ui.toolbar import Toolbar
 from minigecko.ui.widgets import ResizeHandle, VResizeHandle
 
 logger = logging.getLogger(__name__)
@@ -31,8 +30,6 @@ class MinigeckoApp(App):
     TITLE = f"minigecko v{__version__}"
 
     DEFAULT_CSS = """
-    #main-tabs { height: 1fr; }
-    #tab-programmer { height: 1fr; }
     #body { height: 1fr; }
     #right-panel { width: 1fr; height: 1fr; }
     """
@@ -42,11 +39,9 @@ class MinigeckoApp(App):
         Binding("s", "select_ic", "Select IC"),
         Binding("i", "identify_ic", "Identify"),
         Binding("d", "ic_ops", "IC Ops"),
-        Binding("v", "tools", "Tools"),
         Binding("h", "help", "Help"),
         Binding("ctrl+d", "toggle_dark", "Theme", show=True),
         Binding("ctrl+q", "quit", "Quit", show=True),
-        Binding("ctrl+p", "command_palette", "Commands", show=True),
     ]
 
     def __init__(self) -> None:
@@ -101,20 +96,15 @@ class MinigeckoApp(App):
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
-        yield Toolbar()
-        with TabbedContent(id="main-tabs"):
-            with TabPane("Programmer", id="tab-programmer"):
-                with Horizontal(id="body"):
-                    panel = HexPanel()
-                    panel.styles.width = self._state["hex_panel_width"]
-                    yield panel
-                    yield ResizeHandle()
-                    with Vertical(id="right-panel"):
-                        yield ICInfoPanel()
-                        yield VResizeHandle()
-                        yield ActionLogPanel()
-            with TabPane("openCUPL", id="tab-cupl"):
-                yield Static("PLD editor — coming soon", id="cupl-stub")
+        with Horizontal(id="body"):
+            panel = HexPanel()
+            panel.styles.width = self._state["hex_panel_width"]
+            yield panel
+            yield ResizeHandle()
+            with Vertical(id="right-panel"):
+                yield ICInfoPanel()
+                yield VResizeHandle()
+                yield ActionLogPanel()
         yield Footer()
 
     def on_mount(self) -> None:
@@ -216,10 +206,7 @@ class MinigeckoApp(App):
 
     def _set_selected_ic(self, chip: str, verb: str) -> None:
         self._selected_ic = chip
-        self.query_one("#btn-select-ic", Static).update(f"Selected IC: {chip}")
-        btn = self.query_one("#btn-ic-ops", Static)
-        btn.remove_class("tb-btn-disabled")
-        btn.add_class("tb-btn")
+        self.refresh_bindings()  # shows the IC Ops key in the footer
         self.query_one(ICInfoPanel).show(chip)
         self.log_action(f"[green]IC  {verb}[/]  {chip}")
 
@@ -241,16 +228,6 @@ class MinigeckoApp(App):
                 self._set_selected_ic(chip, "identified")
 
         self.push_screen(IdentifyScreen(), _on_identified)
-
-    def on_click(self, event) -> None:
-        result = self.screen.get_widget_at(*event.screen_offset)
-        widget = result[0] if result else None
-        if widget:
-            wid = getattr(widget, "id", None)
-            if wid == "btn-select-ic":
-                self._open_chip_select()
-            elif wid == "btn-ic-ops" and self._selected_ic:
-                self.action_ic_ops()
 
     def check_action(self, action: str, parameters: tuple) -> bool | None:
         if action == "ic_ops":
@@ -477,9 +454,6 @@ class MinigeckoApp(App):
     @work(thread=True)
     def _do_compare(self, ic_name: str, reference: Path) -> None:
         self._run_verify_in_thread(ic_name, reference)
-
-    def action_tools(self) -> None:
-        self.log_action("[dim]TOOLS  not implemented yet[/]")
 
     def action_help(self) -> None:
         if not is_manual_cached():

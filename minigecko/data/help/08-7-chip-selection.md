@@ -6,9 +6,8 @@
 
 Before you can run most device operations, you must select the correct chip.
 
-Ways to open the chip selector:
+To open the chip selector:
 
-- Click the `Selected IC: —` control in the toolbar.
 - Press `s` from the main application screen.
 
 What happens when it opens:
@@ -74,7 +73,7 @@ Ways to select a device:
 After selection:
 
 - The chip selector closes.
-- The toolbar updates from `Selected IC: —` to the chosen part name.
+- The IC information panel shows the chosen part.
 - The `IC Ops` control becomes active.
 - The IC information panel refreshes with metadata for the selected device.
 - The action log records the chip selection event.

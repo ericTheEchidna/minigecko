@@ -6,7 +6,7 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Input, Static
 
-from minigecko.ui.hexdump import _HEX_WIDTH, _col_header_markup, _separator_markup
+from minigecko.ui.hexdump import _col_header_markup, _separator_markup
 from minigecko.ui.widgets.hex_dump_view import HexDumpView
 
 
