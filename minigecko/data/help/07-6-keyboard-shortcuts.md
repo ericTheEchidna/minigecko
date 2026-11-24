@@ -14,7 +14,7 @@ Global shortcuts:
 | `s` | Open chip selection |
 | `d` | Open IC operations for the selected chip |
 | `h` | Open this manual |
-| `y` | Copy the last minipro command, to paste into a terminal (see Appendix B) |
+| `y` | Copy the last minipro or jedutil command, to paste into a terminal (see Appendix B) |
 | `1` / `2` | Show the Chip / Data tab |
 | `Ctrl+D` | Toggle theme |
 | `Ctrl+Q` | Quit MiniGecko |

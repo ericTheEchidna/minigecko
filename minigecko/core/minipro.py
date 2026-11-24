@@ -206,14 +206,22 @@ if os.environ.get("MINIGECKO_EMULATE", "").strip() == "1":
     _transport = _emulate_transport
 
 
-# Called with the shell command line of every minipro run, before it starts.
-_command_listener: Optional[Callable[[str], None]] = None
+# Called as (command, note) with the shell command line of every external tool
+# run (minipro, MAME jedutil), before it starts. *note* is "" unless the command
+# needs a word of warning before it is pasted into a terminal.
+_command_listener: Optional[Callable[[str, str], None]] = None
 
 
-def set_command_listener(listener: Optional[Callable[[str], None]]) -> None:
-    """Have *listener* receive each minipro command line (None = stop)."""
+def set_command_listener(listener: Optional[Callable[[str, str], None]]) -> None:
+    """Have *listener* receive each external command line (None = stop)."""
     global _command_listener
     _command_listener = listener
+
+
+def announce(command: str, note: str = "") -> None:
+    """Report an external tool's *command* line to the listener, if any."""
+    if _command_listener is not None:
+        _command_listener(command, note)
 
 
 def command_line(args: list[str]) -> str:
@@ -235,8 +243,7 @@ def _run(
     Every run, emulated or real, first reports its command line, so the log
     shows a command that does the same thing in a terminal.
     """
-    if _command_listener is not None:
-        _command_listener(command_line(args))
+    announce(command_line(args))
     return _transport(args, input_data, progress_cb)
 
 

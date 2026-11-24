@@ -64,23 +64,25 @@ class MinigeckoApp(App):
         self._data_path: Path | None = None
         self._read_from: str | None = None  # chip the loaded data was read from
         self._selected_ic: str | None = None
-        self._last_command: str | None = None  # last minipro command line run
+        self._last_command: str | None = None  # last external command line run
 
-    def _on_minipro_command(self, command: str) -> None:
-        """Log a minipro command line; called from any thread before it runs."""
+    def _on_command(self, command: str, note: str = "") -> None:
+        """Log an external command line; called from any thread before it runs."""
         if threading.current_thread() is threading.main_thread():
-            self._log_command(command)
+            self._log_command(command, note)
         else:
-            self.call_from_thread(self._log_command, command)
+            self.call_from_thread(self._log_command, command, note)
 
-    def _log_command(self, command: str) -> None:
+    def _log_command(self, command: str, note: str = "") -> None:
         self._last_command = command
         self.log_action(f"[dim]$ {escape(command)}[/]")
+        if note:
+            self.log_action(f"[yellow]  note:[/] {escape(note)}")
 
     def action_copy_command(self) -> None:
-        """Copy the last minipro command line, ready to paste into a terminal."""
+        """Copy the last command line (minipro or jedutil), ready for a terminal."""
         if not self._last_command:
-            self.notify("No minipro command has run yet.")
+            self.notify("No command has run yet.")
             return
         self.copy_to_clipboard(self._last_command)  # OSC 52, for terminals that support it
         xclip = shutil.which("xclip")
@@ -170,7 +172,7 @@ class MinigeckoApp(App):
         from minigecko.core import set_binary_path, set_command_listener
 
         set_binary_path(self._state.get("minipro_path", ""))
-        set_command_listener(self._on_minipro_command)
+        set_command_listener(self._on_command)
         self._poll_programmer()
         self._preload_device_db()
         self._preload_help_manual()

@@ -131,15 +131,25 @@ def jedutil_device(fuse_count: int, chip: str = "") -> str | None:
     return name
 
 
+def _body(text: str) -> str:
+    """The fields of a JEDEC file: the text between STX and ETX, right-stripped."""
+    body = text.split(_STX, 1)[1] if _STX in text else text
+    return body.split(_ETX, 1)[0].rstrip()
+
+
+def _is_strict(text: str) -> bool:
+    """True when every field is closed, so jedutil takes the file as it is."""
+    return _body(text).endswith("*")
+
+
 def strict_jedec(text: str) -> bytes:
     """*text* as a JEDEC file jedutil accepts: every field closed, checksum fixed.
 
     minipro leaves the last field (``*C…``) without its closing ``*``, and
     MAME's parser rejects that as "Invalid .JED file" (bench, 2026-11-24).
     """
-    body = text.split(_STX, 1)[1] if _STX in text else text
-    body = body.split(_ETX, 1)[0].rstrip()
-    if not body.endswith("*"):
+    body = _body(text)
+    if not _is_strict(text):
         body += "\r\n*"
     data = (_STX + body + "\r\n" + _ETX).encode("ascii", errors="replace")
     return data + b"%04X\r\n" % (sum(data) & 0xFFFF)
@@ -179,6 +189,7 @@ def decompile(path: Path, chip: str = "") -> tuple[str | None, str]:
     Returns ``(None, why)`` when they cannot be shown: jedutil missing, an
     unsupported fuse count, or jedutil refusing the file. Never changes *path*.
     """
+    import shlex
     import shutil
     import subprocess
     import tempfile
@@ -195,6 +206,14 @@ def decompile(path: Path, chip: str = "") -> tuple[str | None, str]:
     if device is None:
         return None, f"jedutil has no {jed.fuse_count}-fuse part to decompile this as"
 
+    from minigecko.core.minipro import announce
+
+    # Log the command for the user's own file; jedutil itself reads a fixed copy.
+    command = shlex.join(["jedutil", "-view", str(path), device])
+    announce(command, "" if _is_strict(text) else (
+        "this file's last field lacks its closing *, so jedutil rejects it as it "
+        "stands; MiniGecko gave jedutil a fixed copy"
+    ))
     with tempfile.NamedTemporaryFile(suffix=".jed") as tmp:
         tmp.write(strict_jedec(text))
         tmp.flush()

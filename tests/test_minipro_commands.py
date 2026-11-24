@@ -32,7 +32,7 @@ def heard(monkeypatch):
 
     monkeypatch.setattr(minipro, "_transport", transport)
     monkeypatch.setattr(minipro, "_override_binary", None)
-    minipro.set_command_listener(commands.append)
+    minipro.set_command_listener(lambda command, note: commands.append(command))
     yield commands, ran
     minipro.set_command_listener(None)
 
@@ -85,6 +85,64 @@ async def test_log_shows_commands_and_y_copies_the_last(monkeypatch):
         assert any("$ minipro -p AT28C64 -z" in m for m in messages)
         assert app.clipboard == "minipro -p AT28C64 -z"
     assert minipro._command_listener is None  # the app drops its listener on exit
+
+
+JED_DIR = Path(__file__).parent / "data" / "jed"
+
+
+@pytest.fixture
+def notes(monkeypatch):
+    """(command, note) pairs the listener receives."""
+    heard: list[tuple[str, str]] = []
+    minipro.set_command_listener(lambda command, note: heard.append((command, note)))
+    yield heard
+    minipro.set_command_listener(None)
+
+
+def test_decompile_logs_jedutil_for_the_users_file(notes, monkeypatch, tmp_path):
+    # Stand-in jedutil: these checks need only the command, not its output.
+    monkeypatch.setattr(shutil, "which", lambda name: "/usr/bin/jedutil")
+    monkeypatch.setattr(
+        subprocess, "run",
+        lambda *a, **k: subprocess.CompletedProcess(a, 0, "Equations:\n\no19 = i2\n", ""),
+    )
+    from minigecko.core.jedec import decompile
+
+    spaced = tmp_path / "my jeds" / "counter.jed"
+    spaced.parent.mkdir()
+    spaced.write_bytes((JED_DIR / "counter_16v8.jed").read_bytes())
+    decompile(spaced, "GAL16V8")
+    decompile(JED_DIR / "minipro_read_16v8.jed", "ATF16V8B")
+
+    (strict_cmd, strict_note), (read_cmd, read_note) = notes
+    assert shlex.split(strict_cmd) == ["jedutil", "-view", str(spaced), "GAL16V8"]
+    assert strict_note == ""  # pastes and works as it stands
+    assert shlex.split(read_cmd)[2] == str(JED_DIR / "minipro_read_16v8.jed")  # not the temp copy
+    assert "closing *" in read_note
+
+
+@pytest.mark.skipif(shutil.which("jedutil") is None, reason="MAME jedutil is not installed")
+def test_logged_jedutil_command_runs_unchanged(notes):
+    from minigecko.core.jedec import decompile
+
+    view, _ = decompile(JED_DIR / "counter_16v8.jed", "GAL16V8")
+    (command, note), = notes
+    assert note == ""
+    out = subprocess.run(shlex.split(command), capture_output=True, text=True, timeout=20)
+    assert view and view == (out.stdout + out.stderr).strip()
+
+
+async def test_log_shows_the_jedutil_note(monkeypatch):
+    monkeypatch.setattr(app_shell, "_save_state", lambda state: None)
+    app = MinigeckoApp()
+    async with app.run_test(size=(120, 36)) as pilot:
+        await pilot.pause(0.3)
+        app._on_command("jedutil -view x.jed GAL16V8", "lacks its closing *")
+        await pilot.pause(0.1)
+        messages = app.query_one(ActionLogPanel)._messages
+        assert "$ jedutil -view x.jed GAL16V8" in messages[-2]
+        assert "lacks its closing *" in messages[-1]
+        assert app._last_command == "jedutil -view x.jed GAL16V8"
 
 
 def _man_page_options() -> set[str]:

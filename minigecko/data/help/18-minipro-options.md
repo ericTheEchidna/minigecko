@@ -7,6 +7,12 @@ The action log shows each command as a line that starts with `$`. Press `y`
 to copy the last command, then paste it into a terminal. It does the same
 thing there. Add any option from this page to do what MiniGecko does not offer.
 
+Opening a `.jed` file also logs the MAME `jedutil` command that turns its
+fuse map into the equations on the Data tab, such as
+`jedutil -view counter.jed GAL16V8`. A `.jed` that minipro read from a chip
+lacks the closing `*` on its last field, and jedutil refuses it as it stands.
+MiniGecko gives jedutil a fixed copy, and the log says so under the command.
+
 This page covers minipro 0.7.4, commit `fd6b56a` (2026-03-09). The source is
 minipro's `src/main.c` and its manual page (`man minipro`). Every option takes
 a short form, a long form, or both.
