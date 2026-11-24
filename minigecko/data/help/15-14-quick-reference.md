@@ -19,6 +19,7 @@
 | `f` | Open file picker |
 | `Ctrl+S` | Save edits to the open file |
 | `F12` | Save as: save the loaded data under a new name |
+| `F9` | Compile the open `.pld` with Galette (saves first) |
 | `1` / `2` | Show the Chip / Data tab |
 | `s` | Open chip selector |
 | `d` | Open IC operations (requires chip selected) |

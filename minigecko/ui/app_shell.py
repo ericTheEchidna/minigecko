@@ -66,6 +66,7 @@ class MinigeckoApp(App):
         Binding("f", "file", "File"),
         Binding("ctrl+s", "save", "Save"),
         Binding("f12", "save_as", "Save as"),
+        Binding("f9", "compile", "Compile"),
         Binding("escape", "leave_editor", "Leave editor", show=False),
         Binding("s", "select_ic", "Select IC"),
         Binding("d", "ic_ops", "IC Ops"),
@@ -447,6 +448,9 @@ class MinigeckoApp(App):
             return bool(self._selected_ic)
         if action in ("save", "save_as"):
             return bool(self._data_path)
+        if action == "compile":
+            return bool(self._data_path) and self._data_path.suffix.lower() == ".pld" \
+                and not self._read_from
         return True
 
     def action_ic_ops(self) -> None:
@@ -548,15 +552,49 @@ class MinigeckoApp(App):
         if not self._unsaved():
             self.notify("No changes to save.")
             return
+        self._write_edits()
+
+    def _write_edits(self) -> bool:
+        """Write the open text to its file; False (and logged) on failure."""
         text = self.query_one("#jed-view", TextArea).text
         try:
             self._data_path.write_text(text)
         except OSError as exc:
             self.log_action(f"[red]SAVE  failed:[/]  {exc}")
-            return
+            return False
         self._saved_text = text
         self._discard_armed = None
         self.log_action(f"[green]SAVE  OK[/]  {self._data_path}")
+        return True
+
+    def action_compile(self) -> None:
+        """Save the open .pld if edited, then compile it beside itself."""
+        path = self._data_path
+        if not path or path.suffix.lower() != ".pld" or self._read_from:
+            return
+        if self._unsaved() and not self._write_edits():
+            return
+        self._do_compile(path)
+
+    @work(thread=True, exclusive=True, group="compile")
+    def _do_compile(self, path: Path) -> None:
+        from minigecko.core.pld import compile_pld
+
+        self._log(f"[cyan]COMPILE[/]  {path.name} …")
+        result = compile_pld(path)
+        if result.ok:
+            self._log(f"[green]COMPILE  {path.name} OK[/]  {result.message}")
+            self._load_hex(path)  # the equations and pinout come from the new .jed
+            return
+        self._log(f"[red]COMPILE  {path.name} FAILED:[/]  {escape(result.message)}")
+        if result.line:
+            self.call_from_thread(self._show_error_line, result.line)
+
+    def _show_error_line(self, line: int) -> None:
+        """Put the cursor on *line* (1-based) of the open source."""
+        view = self.query_one("#jed-view", TextArea)
+        view.cursor_location = (max(line - 1, 0), 0)
+        view.focus()
 
     def action_save_as(self) -> None:
         """Save the loaded data (a file, edited text or a chip read) under a
@@ -588,6 +626,7 @@ class MinigeckoApp(App):
             self._file_label = str(save_path)
             self._read_from = None
             self._update_subtitle()
+            self.refresh_bindings()  # Compile shows for a .pld only
             self.log_action(f"[green]SAVE  OK[/]  → {save_path}")
             if text is not None:
                 self._load_hex(save_path)  # retitle, and pick up a .jed beside the new name

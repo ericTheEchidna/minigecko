@@ -46,6 +46,14 @@ While you type in the text, letter keys go into the text. Press `Escape` (or
 - `F12` (**Save as**) saves the loaded data, with any edits, under a name you
   pick. The new file becomes the open one; the old file stays as it was.
 
+- `F9` (**Compile**) appears when a `.pld` is open. It saves your edits, then
+  compiles the source with Galette into a `.jed` and a `.chp` beside it, and
+  shows the new equations. If Galette finds an error, the action log shows its
+  message and the cursor moves to the line it names. The log also shows the
+  `galette` command, which `y` copies. MiniGecko tells a GALasm source (it
+  starts with its chip, such as `GAL16V8`) from a CUPL one; compiling CUPL
+  with WinCUPL is not built in yet.
+
 Before an action would throw away unsaved edits (opening another file,
 reading a chip, quitting), MiniGecko warns you. Do the same thing again to
 discard the edits.
