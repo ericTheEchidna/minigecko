@@ -19,7 +19,8 @@ Main screen structure:
 
 Layout behavior:
 
-- The left hex panel is wider than the right-side information area by default.
+- The hex panel stays hidden until you open a file or read a chip; until then
+	the information panel and action log use the full width.
 - The right side is split vertically into an information panel above and an
 	action log below.
 - The divider between left and right panels can be resized.
@@ -92,8 +93,8 @@ What it shows:
 - The selected chip name.
 - A summary line that may include chip type, memory size, package, pin count,
   and ISP capability.
-- A decoded flag table derived from the `minipro` device database.
-- A datasheet search link for the selected part.
+- One line for each capability the `minipro` device database lists for it.
+- A link that searches the web for the part's datasheet.
 
 Typical metadata fields:
 
@@ -104,20 +105,13 @@ Typical metadata fields:
 - Pin count.
 - ISP support indicator, when applicable.
 
-Decoded capability flags may include:
-
-- Whether the device is erasable.
-- Whether chip ID support exists.
-- Whether the part uses 16-bit words.
-- Whether data offset handling is present.
-- Whether write-protect sequencing is required.
-- Whether lock-bit or calibration support exists.
-- Whether pin order is reversed.
-- Whether adjustable VCC or VPP is indicated.
-- Which programming interface type is reported.
+Capabilities are listed only when the part has them, in plain words: for
+example "Erases electrically" or "Reports a chip ID, so Identify can confirm
+it". For ROMs and microcontrollers without a chip ID the panel says so,
+because Identify cannot confirm such a part.
 
 Use this panel as a verification step before write or erase operations. If the
-package, size, or capability flags do not match your actual device, return to
+package, size, or capabilities do not match your actual device, return to
 chip selection and choose the correct part.
 
 ### 5.5 Action Log Panel

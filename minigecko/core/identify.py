@@ -122,8 +122,8 @@ def normalize_chip_id(raw: str) -> str:
 def is_id_capable(entry: dict) -> bool:
     """True when the device's hardware flags advertise chip ID support."""
     return any(
-        label == "Chip ID" and bool(value)
-        for _key, label, value in decode_flags(entry)
+        key == "has_chip_id" and bool(value)
+        for key, _label, value in decode_flags(entry)
     )
 
 

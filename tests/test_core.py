@@ -988,3 +988,30 @@ class TestSuggestedNextSteps:
 
     def test_no_candidates_means_no_steps(self):
         assert suggested_next_steps([]) == []
+
+
+class TestFeatureLines:
+    """The info panel lists only flags that are set, in plain words."""
+
+    def _lines(self, name):
+        from minigecko.core import get_device
+        from minigecko.ui.panels.ic_info_panel import feature_lines
+        return feature_lines(get_device(name))
+
+    def test_id_capable_eprom(self):
+        lines = self._lines("W27C512@DIP28")
+        assert "• Reports a chip ID, so Identify can confirm it" in lines
+        assert not any("No chip ID" in ln for ln in lines)
+
+    def test_eeprom_without_id_says_so(self):
+        assert "• No chip ID: Identify cannot confirm it" in self._lines("AT28C64")
+
+    def test_sram_has_nothing_to_say(self):
+        assert self._lines("62256") == []
+
+    def test_socket_only_interface_is_not_listed(self):
+        assert not any("ZIF" in ln or "ICSP" in ln for ln in self._lines("AT28C64"))
+
+    def test_unknown_chip(self):
+        from minigecko.ui.panels.ic_info_panel import feature_lines
+        assert feature_lines({}) == []

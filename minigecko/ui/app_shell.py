@@ -101,8 +101,11 @@ class MinigeckoApp(App):
         with Horizontal(id="body"):
             panel = HexPanel()
             panel.styles.width = self._state["hex_panel_width"]
+            panel.display = False  # hidden until data loads, so the log gets the width
             yield panel
-            yield ResizeHandle()
+            handle = ResizeHandle()
+            handle.display = False
+            yield handle
             with Vertical(id="right-panel"):
                 yield ICInfoPanel()
                 yield VResizeHandle()
@@ -196,7 +199,12 @@ class MinigeckoApp(App):
             data = data[:_MAX_BYTES]
             self._log(f"[yellow]FILE  truncated — showing first {_MAX_BYTES // 2**20} MB[/]")
 
-        self.call_from_thread(panel.load, data)
+        self.call_from_thread(self._show_hex, data)
+
+    def _show_hex(self, data: bytes) -> None:
+        self.query_one(HexPanel).display = True
+        self.query_one(ResizeHandle).display = True
+        self.query_one(HexPanel).load(data)
 
     def save_panel_width(self) -> None:
         panel = self.query_one(HexPanel)
