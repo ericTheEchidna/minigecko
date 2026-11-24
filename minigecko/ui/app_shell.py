@@ -27,6 +27,23 @@ from minigecko.ui.widgets import HResizeHandle, VResizeHandle
 
 logger = logging.getLogger(__name__)
 
+# Control bytes a text file may hold: tab, LF, FF, CR, and JEDEC's STX/ETX.
+_TEXT_CONTROLS = {0x09, 0x0A, 0x0C, 0x0D, 0x02, 0x03}
+
+
+def _as_text(data: bytes) -> str | None:
+    """*data* as text when it reads as UTF-8 with no stray control bytes, else None.
+
+    A ROM image fails this: it holds zero bytes, other control bytes, or 0xFF
+    runs that are not UTF-8. An empty file is not text (it shows as empty hex).
+    """
+    if not data or any(b < 0x20 and b not in _TEXT_CONTROLS for b in data[:65536]):
+        return None
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+
 
 class MinigeckoApp(App):
     """MiniGecko open source programmer suite."""
@@ -162,7 +179,7 @@ class MinigeckoApp(App):
                         yield Static("Fuse map (.jed)", id="jed-title", classes="pane-title")
                         yield TextArea("", read_only=True, id="jed-view")
                     yield HResizeHandle("jed-left", id="jed-split")
-                    with Vertical():
+                    with Vertical(id="jed-right"):
                         yield Static("Equations", id="eqn-title", classes="pane-title")
                         yield TextArea("", read_only=True, id="jed-eqn")
         yield VResizeHandle()
@@ -251,8 +268,8 @@ class MinigeckoApp(App):
 
     @work(thread=True)
     def _load_hex(self, path: Path) -> None:
-        """Show *path* in the Data tab: a .jed or .pld as text beside equations,
-        anything else as hex."""
+        """Show *path* in the Data tab: a .jed, .pld or .chp as text beside
+        equations, other plain text on its own, anything else as hex."""
         panel = self.query_one(HexPanel)
         self.call_from_thread(panel.clear)
 
@@ -270,8 +287,9 @@ class MinigeckoApp(App):
             self.call_from_thread(self._show_data, None, text, equations, note)
             return
 
-        if path.suffix.lower() == ".pld":
-            # The source beside the equations of the .jed built from it, if any.
+        beside_jed = {".pld": "Source", ".chp": "Pinout"}  # shown beside the .jed's equations
+        kind = beside_jed.get(path.suffix.lower())
+        if kind is not None:
             from minigecko.core.jedec import decompile
 
             text = data.decode("utf-8", errors="replace")
@@ -281,14 +299,14 @@ class MinigeckoApp(App):
             )
             if jed is None:
                 equations, note = None, (
-                    f"No {path.stem}.jed beside {path.name}. Compile it with Galette "
-                    "or WinCUPL, then open the .pld or the .jed again."
+                    f"No {path.stem}.jed beside {path.name}. Compile the .pld with Galette "
+                    "or WinCUPL, then open this file again."
                 )
             else:
                 equations, note = decompile(jed, self._selected_ic or "")
                 note = f"From {jed.name}. {note}"
             self.call_from_thread(
-                self._show_data, None, text, equations, note, f"Source ({path.name})"
+                self._show_data, None, text, equations, note, f"{kind} ({path.name})"
             )
             return
 
@@ -296,6 +314,11 @@ class MinigeckoApp(App):
         if truncated:
             data = data[:_MAX_BYTES]
             self._log(f"[yellow]FILE  truncated — showing first {_MAX_BYTES // 2**20} MB[/]")
+
+        text = _as_text(data)
+        if text is not None:  # plain text reads as text, across the whole tab
+            self.call_from_thread(self._show_data, None, text, None, "", path.name, True)
+            return
 
         self.call_from_thread(self._show_data, data, None)
 
@@ -306,10 +329,11 @@ class MinigeckoApp(App):
         equations: str | None = None,
         note: str = "",
         text_title: str = "Fuse map (.jed)",
+        solo: bool = False,
     ) -> None:
-        """Fill the Data tab and switch to it: hex for *data*, or *text* (a
-        .jed's fuse map or a .pld source, titled *text_title*) beside the
-        decompiled *equations* (or *note* saying why not)."""
+        """Fill the Data tab and switch to it: hex for *data*, or *text*
+        (titled *text_title*) beside the decompiled *equations*, or *note*
+        saying why not. With *solo*, the text fills the tab on its own."""
         self.query_one("#data-empty").display = False
         hex_panel = self.query_one(HexPanel)
         hex_panel.display = data is not None
@@ -317,8 +341,14 @@ class MinigeckoApp(App):
         if data is not None:
             hex_panel.load(data)
         if text is not None:
+            self.query_one("#jed-right").display = not solo
+            self.query_one("#jed-split").display = not solo
+            self.query_one("#jed-left").styles.width = (
+                "1fr" if solo else f"{self._state['jed_split']}%"
+            )
             self.query_one("#jed-title", Static).update(text_title)
             self.query_one("#jed-view", TextArea).load_text(text)
+        if text is not None and not solo:
             # The note goes in the title, so the pane holds only jedutil's output.
             title = self.query_one("#eqn-title", Static)
             if equations is not None:

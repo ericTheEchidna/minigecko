@@ -188,6 +188,12 @@ beside its logic equations, decompiled by MAME's `jedutil` (install it with
 the source declares them: `WR` means ~WR is asserted. An equation list with no
 logic means the chip is blank or was secured.
 
+Opening a `.pld` source or a `.chp` (Galette's drawing of the chip's pins)
+shows it on the left, beside the equations of the `.jed` with the same name.
+Drag the divider between the two panes to give either one more room; the
+split is remembered. Any other plain-text file opens as text across the whole
+tab. Everything else shows as hex.
+
 Reading a PLD saves a `.jed` file, which `Ctrl+S` can store and which can be
 written back later. A chip whose security fuse is set reads back blank, so
 for a secured chip the verify step during the write is the only check.

@@ -130,3 +130,53 @@ async def test_pld_shows_source_beside_its_jeds_equations(app, monkeypatch, tmp_
         await pilot.pause(0.3)
         assert "GAL16V8" in app.query_one("#jed-view", TextArea).text
         assert "No lone.jed beside lone.pld" in app.query_one("#jed-eqn", TextArea).text
+
+
+async def test_chp_shows_pinout_beside_its_jeds_equations(app, monkeypatch):
+    from minigecko.core import jedec
+    monkeypatch.setattr(jedec, "decompile", lambda path, chip="": ("Equations:\n\no12 = i2", "ok."))
+    chp = JED.parent / "gates_16v8.chp"
+    async with app.run_test(size=(120, 36)) as pilot:
+        await pilot.pause(0.5)
+        _load(app, chp)
+        await pilot.pause(0.3)
+        assert "Pinout (gates_16v8.chp)" in str(app.query_one("#jed-title", Static).render())
+        assert "-------\\___/-------" in app.query_one("#jed-view", TextArea).text
+        assert "o12 = i2" in app.query_one("#jed-eqn", TextArea).text
+        assert app.query_one("#jed-right").display
+
+
+async def test_plain_text_fills_the_tab_and_binary_stays_hex(app, tmp_path):
+    notes = tmp_path / "notes.txt"
+    notes.write_text("Socket the GAL notch up.\n\tPin 1 is the clock.\n")
+    rom = tmp_path / "rom.bin"
+    rom.write_bytes(bytes([0x00, 0xFF, 0x41, 0x42]) * 64)
+    async with app.run_test(size=(120, 36)) as pilot:
+        await pilot.pause(0.5)
+        _load(app, notes)
+        await pilot.pause(0.3)
+        assert app.query_one("#jed-pair").display and not app.query_one(HexPanel).display
+        assert app.query_one("#jed-view", TextArea).text.startswith("Socket the GAL")
+        assert not app.query_one("#jed-right").display
+        assert not app.query_one("#jed-split").display
+        assert app.query_one("#jed-left").size.width > 110  # the whole tab
+
+        _load(app, rom)
+        await pilot.pause(0.3)
+        assert app.query_one(HexPanel).display and not app.query_one("#jed-pair").display
+
+        _load(app, JED)  # a .jed after plain text gets its split back
+        await pilot.pause(0.5)
+        assert app.query_one("#jed-right").display and app.query_one("#jed-split").display
+        assert abs(app.query_one("#jed-left").size.width - 60) <= 2
+
+
+def test_text_detection():
+    from minigecko.ui.app_shell import _as_text
+    assert _as_text(b"GAL16V8\r\nGates\n") == "GAL16V8\r\nGates\n"
+    assert _as_text("Pinout — µs\n".encode()) is not None  # UTF-8 is text
+    assert _as_text(b"\x02*QF2194*\x03") is not None  # JEDEC framing
+    assert _as_text(b"") is None
+    assert _as_text(b"AB\x00CD") is None  # zero byte
+    assert _as_text(b"\xff\xff\xff\xff") is None  # erased EPROM: not UTF-8
+    assert _as_text(b"\x1b[0mhello") is None  # other control bytes
