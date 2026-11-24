@@ -344,6 +344,36 @@ def blank_check_device(device: str) -> MiniproResult:
     return _run(["-p", device, "-b", "-y"])
 
 
+# minipro's blank check is a verify against an all-FF image. A used memory chip
+# fails as "Verification failed at address 0x…: File=0xFF, Device=0x…"; a used
+# GAL as "This device is not blank." Any other failure (no chip, bad contact,
+# USB) says nothing about the chip's contents.
+_NOT_BLANK_RE = re.compile(
+    r"Verification failed at address 0x([0-9A-Fa-f]+):\s*File=0x[0-9A-Fa-f]+,\s*"
+    r"Device=0x([0-9A-Fa-f]+)"
+    r"|This device is not blank"
+)
+
+
+def blank_check_verdict(result: MiniproResult) -> tuple[str, str]:
+    """Classify a blank check as ``"blank"``, ``"not blank"`` or ``"error"``.
+
+    The second item is a plain-words detail for the log: the first used byte
+    when the chip is not blank, minipro's last line when the check failed.
+    """
+    if result.ok:
+        return "blank", "every byte reads 0xFF"
+    m = _NOT_BLANK_RE.search(result.output)
+    if m:
+        if m.group(1):
+            return "not blank", (
+                f"first used byte at 0x{m.group(1).upper()} reads 0x{m.group(2).upper()}"
+            )
+        return "not blank", "fuse map is not blank"
+    lines = [ln.strip() for ln in result.output.splitlines() if ln.strip()]
+    return "error", lines[-1] if lines else "minipro failed with no message"
+
+
 _BAD_PIN_RE = re.compile(r"Bad contact on pin:(\d+)")
 _CHIP_ID_MISMATCH_RE = re.compile(
     r"Chip ID mismatch:\s*expected\s*0x([0-9A-Fa-f]+),\s*got\s*0x([0-9A-Fa-f]+)"

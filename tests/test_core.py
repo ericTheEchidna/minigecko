@@ -634,6 +634,48 @@ class TestParseBadPins:
         assert parse_bad_pins("") == []
 
 
+from minigecko.core.minipro import MiniproResult, blank_check_verdict
+
+
+class TestBlankCheckVerdict:
+    """Only minipro's own not-blank wording counts as 'not blank'."""
+
+    def test_blank(self):
+        verdict, _ = blank_check_verdict(
+            MiniproResult(ok=True, stderr="Code memory section is blank.\n"))
+        assert verdict == "blank"
+
+    def test_used_memory_chip_names_first_byte(self):
+        r = MiniproResult(ok=False, returncode=1, stderr=(
+            "Found TL866II+ 04.2.132 (0x284)\n"
+            "Verification failed at address 0x01A0: File=0xFF, Device=0x3c\n"))
+        assert blank_check_verdict(r) == (
+            "not blank", "first used byte at 0x01A0 reads 0x3C")
+
+    def test_used_gal(self):
+        r = MiniproResult(ok=False, returncode=1, stderr="This device is not blank.\n")
+        assert blank_check_verdict(r)[0] == "not blank"
+
+    def test_empty_socket_is_an_error_not_a_used_chip(self):
+        r = MiniproResult(ok=False, returncode=1, stderr=TestParseBadPins._EMPTY_SOCKET)
+        assert blank_check_verdict(r) == ("error", "Bad contact on pin:27")
+
+    def test_missing_binary_is_an_error(self):
+        r = MiniproResult(ok=False, stderr="minipro not found")
+        assert blank_check_verdict(r)[0] == "error"
+
+    def test_silent_failure_is_an_error(self):
+        assert blank_check_verdict(MiniproResult(ok=False))[1] == (
+            "minipro failed with no message")
+
+    def test_emulator_wording_matches(self, monkeypatch):
+        from minigecko.core import emulator
+        monkeypatch.setattr(emulator, "_fixture_for", lambda d: b"\x00")
+        assert blank_check_verdict(emulator._emu_blank_check("AT28C64"))[0] == "not blank"
+        monkeypatch.setattr(emulator, "_fixture_for", lambda d: None)
+        assert blank_check_verdict(emulator._emu_blank_check("AT28C64"))[0] == "blank"
+
+
 class TestReadChipId:
     def _with_transport(self, monkeypatch, result):
         from minigecko.core import minipro as mp

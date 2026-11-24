@@ -416,14 +416,23 @@ class MinigeckoApp(App):
 
     @work(thread=True)
     def _do_blank_check(self, ic_name: str) -> None:
-        from minigecko.core import blank_check_device
+        self._blank_check_and_log(ic_name)
+
+    def _blank_check_and_log(self, ic_name: str) -> None:
+        """Blank-check *ic_name* and log the verdict (call from a worker thread)."""
+        from minigecko.core import blank_check_device, blank_check_verdict
 
         self._log(f"[cyan]BLANK CHECK[/]  {ic_name} …")
-        result = blank_check_device(ic_name)
-        if result.ok:
-            self._log(f"[green]BLANK CHECK  {ic_name} OK[/]  all 0xFF")
+        verdict, detail = blank_check_verdict(blank_check_device(ic_name))
+        if verdict == "blank":
+            self._log(f"[green]BLANK CHECK  {ic_name}: blank[/]  {detail}")
+        elif verdict == "not blank":
+            self._log(f"[yellow]BLANK CHECK  {ic_name}: not blank[/]  {detail}")
         else:
-            self._log(f"[yellow]BLANK CHECK  {ic_name}:[/]  not blank")
+            self._log(
+                f"[red]BLANK CHECK  {ic_name} FAILED:[/]  {detail}  "
+                f"(this says nothing about the chip's contents)"
+            )
 
     def run_erase_op(self, ic_name: str, blank_check_after: bool = False, read_after: bool = False) -> None:
         self._do_erase(ic_name, blank_check_after, read_after)
@@ -431,7 +440,7 @@ class MinigeckoApp(App):
     @work(thread=True)
     def _do_erase(self, ic_name: str, blank_check_after: bool, read_after: bool) -> None:
         import tempfile
-        from minigecko.core import blank_check_device, erase_device, read_device
+        from minigecko.core import erase_device, read_device
 
         self._log(f"[cyan]ERASE[/]  {ic_name} …")
         result = erase_device(ic_name, progress_cb=self._make_progress_cb())
@@ -448,12 +457,7 @@ class MinigeckoApp(App):
             return
         self._log(f"[green]ERASE  {ic_name} OK[/]")
         if blank_check_after:
-            self._log(f"[cyan]BLANK CHECK[/]  {ic_name} …")
-            bc = blank_check_device(ic_name)
-            if bc.ok:
-                self._log(f"[green]BLANK CHECK  {ic_name} OK[/]  all 0xFF")
-            else:
-                self._log(f"[yellow]BLANK CHECK  {ic_name}:[/]  not blank")
+            self._blank_check_and_log(ic_name)
         if read_after:
             fd, tmp_str = tempfile.mkstemp(prefix=f"minigecko_{ic_name}_", suffix=".bin")
             os.close(fd)

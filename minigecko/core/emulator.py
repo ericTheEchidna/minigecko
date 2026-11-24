@@ -146,12 +146,14 @@ def _emu_read_id(device: str) -> MiniproResult:
 
 def _emu_blank_check(device: str) -> MiniproResult:
     fixture = _fixture_for(device)
+    # Same wording as real minipro, so blank_check_verdict sees what hardware gives.
     if fixture:
         return MiniproResult(
             ok=False,
-            stderr=f"Blank check {device}: device is NOT blank (fixture data present, emulated)\n",
+            returncode=1,
+            stderr="Verification failed at address 0x0000: File=0xFF, Device=0x00 (emulated)\n",
         )
-    return MiniproResult(ok=True, stdout=f"Blank check {device}: all bytes 0xFF (emulated)\n")
+    return MiniproResult(ok=True, stderr="Code memory section is blank. (emulated)\n")
 
 
 # ---------------------------------------------------------------------------
