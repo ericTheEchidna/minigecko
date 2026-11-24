@@ -1,0 +1,18 @@
+GAL16V8
+Counter4
+
+Clock EN   NC   NC   NC   NC   NC   NC   NC   GND
+/OE   NC   NC   NC   Q3   Q2   Q1   Q0   NC   VCC
+
+Q0.R = EN * /Q0 + /EN * Q0
+Q1.R = /EN * Q1 + Q1 * /Q0 + EN * /Q1 * Q0
+Q2.R = /EN * Q2 + Q2 * /Q0 + Q2 * /Q1 + EN * /Q2 * Q0 * Q1
+Q3.R = /EN * Q3 + Q3 * /Q0 + Q3 * /Q1 + Q3 * /Q2 + EN * /Q3 * Q0 * Q1 * Q2
+
+DESCRIPTION
+
+Bench test for MiniGecko (MINIGECKO-011): a 4-bit binary up-counter on
+pins 15-18 (Q0 = pin 18, Q3 = pin 15), counting on each rising clock edge on pin 1
+while EN (pin 2) is high. Pin 11 (/OE) must be low for the outputs to drive.
+Uses the GAL's registered mode, where the gates design uses its
+combinational mode.

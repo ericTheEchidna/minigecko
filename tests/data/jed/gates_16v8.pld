@@ -1,0 +1,20 @@
+GAL16V8
+Gates
+
+NC   A    B    C    D    NC   NC   NC   NC   GND
+NC   AND  OR   XOR  NAND NOTA AND4 MAJ  PASS VCC
+
+AND  = A * B
+OR   = A + B
+XOR  = A * /B + /A * B
+NAND = /A + /B
+NOTA = /A
+AND4 = A * B * C * D
+MAJ  = A * B + A * C + B * C
+PASS = A
+
+DESCRIPTION
+
+Bench test for MiniGecko (MINIGECKO-011): eight combinational outputs from
+four inputs, each a gate you can check with switches on A-D and a meter or
+LEDs on pins 12-19. Decompiled equations should read back as written here.
