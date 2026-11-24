@@ -1,17 +1,20 @@
 GAL16V8
 Gates
 
+; Pin list: pins 1-10 on the first line, 11-20 on the second.
+; NC = not connected. Inputs A-D on pins 2-5; outputs on pins 12-19.
 NC   A    B    C    D    NC   NC   NC   NC   GND
 NC   AND  OR   XOR  NAND NOTA AND4 MAJ  PASS VCC
 
-AND  = A * B
-OR   = A + B
-XOR  = A * /B + /A * B
-NAND = /A + /B
-NOTA = /A
-AND4 = A * B * C * D
-MAJ  = A * B + A * C + B * C
-PASS = A
+; One gate per output. * = AND, + = OR, / = NOT.
+AND  = A * B                   ; pin 12
+OR   = A + B                   ; pin 13
+XOR  = A * /B + /A * B         ; pin 14: 1 when A and B differ
+NAND = /A + /B                 ; pin 15: not (A and B)
+NOTA = /A                      ; pin 16
+AND4 = A * B * C * D           ; pin 17
+MAJ  = A * B + A * C + B * C   ; pin 18: 1 when two or more of A, B, C are 1
+PASS = A                       ; pin 19
 
 DESCRIPTION
 

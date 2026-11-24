@@ -1,13 +1,21 @@
 GAL16V8
 Counter4
 
+; Pin list: pins 1-10 on the first line, 11-20 on the second.
+; NC = not connected. A leading / marks a pin active low.
 Clock EN   NC   NC   NC   NC   NC   NC   NC   GND
 /OE   NC   NC   NC   Q3   Q2   Q1   Q0   NC   VCC
 
-Q0.R = EN * /Q0 + /EN * Q0
-Q1.R = /EN * Q1 + Q1 * /Q0 + EN * /Q1 * Q0
-Q2.R = /EN * Q2 + Q2 * /Q0 + Q2 * /Q1 + EN * /Q2 * Q0 * Q1
-Q3.R = /EN * Q3 + Q3 * /Q0 + Q3 * /Q1 + Q3 * /Q2 + EN * /Q3 * Q0 * Q1 * Q2
+; A binary counter: on each clock edge, each Q flips when EN is 1 and every
+; lower Q is 1. Q0 flips when EN; Q1 when EN*Q0; Q2 when EN*Q0*Q1; Q3 when
+; EN*Q0*Q1*Q2. GALasm has no XOR, so "Q xor T" is written out as a sum of
+; products: Q stays when T is 0 (any term of T is 0), and flips when T is 1.
+; .R = registered: the output takes this value on the clock edge.
+; * = AND, + = OR, / = NOT.
+Q0.R = EN * /Q0 + /EN * Q0                                                 ; Q0 xor EN
+Q1.R = /EN * Q1 + Q1 * /Q0 + EN * /Q1 * Q0                                 ; Q1 xor (EN*Q0)
+Q2.R = /EN * Q2 + Q2 * /Q0 + Q2 * /Q1 + EN * /Q2 * Q0 * Q1                 ; Q2 xor (EN*Q0*Q1)
+Q3.R = /EN * Q3 + Q3 * /Q0 + Q3 * /Q1 + Q3 * /Q2 + EN * /Q3 * Q0 * Q1 * Q2 ; Q3 xor (EN*Q0*Q1*Q2)
 
 DESCRIPTION
 

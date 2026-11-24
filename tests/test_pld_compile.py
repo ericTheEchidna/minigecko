@@ -62,8 +62,9 @@ def test_a_galette_error_names_its_line(tmp_path):
     src = tmp_path / "broken.pld"
     text = (JED_DIR / "gates_16v8.pld").read_text().replace("AND  = A * B", "AND  = A * Q")
     src.write_text(text)
+    broken = next(n for n, ln in enumerate(text.splitlines(), 1) if ln.startswith("AND  = A * Q"))
     result = compile_pld(src)
-    assert not result.ok and result.line == 7 and "unknown pinname" in result.message
+    assert not result.ok and result.line == broken and "unknown pinname" in result.message
     assert not (tmp_path / "broken.jed").exists()
 
 
