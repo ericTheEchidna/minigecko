@@ -118,9 +118,12 @@ async def test_f9_compile_reloads_the_equations(app, tmp_path):
         _open(app, src)
         await pilot.pause(0.5)
         assert "No gates_16v8.jed" in app.query_one("#jed-eqn", TextArea).text
+        view = app.query_one("#jed-view", TextArea)
+        view.cursor_location = (12, 3)
         await pilot.press("f9")
         await pilot.pause(2.0)
         assert (tmp_path / "gates_16v8.jed").exists()
+        assert view.cursor_location == (12, 3)  # the editor was left alone
         assert "AND = A & B" in app.query_one("#jed-eqn", TextArea).text  # named from the .pld
 
 

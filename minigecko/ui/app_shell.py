@@ -335,23 +335,10 @@ class MinigeckoApp(App):
         beside_jed = {".pld": "Source", ".chp": "Pinout"}  # shown beside the .jed's equations
         kind = beside_jed.get(path.suffix.lower())
         if kind is not None:
-            from minigecko.core.jedec import decompile
-
             text = data.decode("utf-8", errors="replace")
             if kind == "Pinout":  # Galette centres its drawing on a wide page
                 text = textwrap.indent(textwrap.dedent(text).strip("\n"), "  ") + "\n"
-            jed = next(
-                (p for p in (path.with_suffix(".jed"), path.with_suffix(".JED")) if p.exists()),
-                None,
-            )
-            if jed is None:
-                equations, note = None, (
-                    f"No {path.stem}.jed beside {path.name}. Compile the .pld with Galette "
-                    "or WinCUPL, then open this file again."
-                )
-            else:
-                equations, note = decompile(jed, self._selected_ic or "")
-                note = f"From {jed.name}. {note}"
+            equations, note = self._equations_beside(path)
             self.call_from_thread(
                 lambda: self._show_data(
                     None, text, equations, note, f"{kind} ({path.name})",
@@ -410,15 +397,35 @@ class MinigeckoApp(App):
             view.show_line_numbers = editable  # compiler errors name a line
             view.load_text(text)
         if text is not None and not solo:
-            # The note goes in the title, so the pane holds only jedutil's output.
-            title = self.query_one("#eqn-title", Static)
-            if equations is not None:
-                title.update(f"Equations: {note}" if note else "Equations")
-                self.query_one("#jed-eqn", TextArea).load_text(equations)
-            else:
-                title.update("Equations: not available")
-                self.query_one("#jed-eqn", TextArea).load_text(note)
+            self._set_equations(equations, note)
         self.action_show_tab("tab-data")
+
+    def _set_equations(self, equations: str | None, note: str) -> None:
+        """Fill the Equations pane; the note goes in its title, so the pane
+        holds only jedutil's output (or, without equations, why not)."""
+        title = self.query_one("#eqn-title", Static)
+        if equations is not None:
+            title.update(f"Equations: {note}" if note else "Equations")
+            self.query_one("#jed-eqn", TextArea).load_text(equations)
+        else:
+            title.update("Equations: not available")
+            self.query_one("#jed-eqn", TextArea).load_text(note)
+
+    def _equations_beside(self, path: Path) -> tuple[str | None, str]:
+        """Equations of the .jed named like *path* (a .pld or .chp), and a note."""
+        from minigecko.core.jedec import decompile
+
+        jed = next(
+            (p for p in (path.with_suffix(".jed"), path.with_suffix(".JED")) if p.exists()),
+            None,
+        )
+        if jed is None:
+            return None, (
+                f"No {path.stem}.jed beside {path.name}. Compile the .pld with F9, "
+                "then the equations show here."
+            )
+        equations, note = decompile(jed, self._selected_ic or "")
+        return equations, f"From {jed.name}. {note}"
 
     def save_jed_split(self, percent: float) -> None:
         """Remember the Data tab's fuse map share of the width, in percent."""
@@ -597,7 +604,9 @@ class MinigeckoApp(App):
             self.call_from_thread(self._compile_done)
         if result.ok:
             self._log(f"[green]COMPILE  {path.name} OK[/]  {result.message}")
-            self._load_hex(path)  # the equations and pinout come from the new .jed
+            # Only the equations change; the editor keeps its cursor and scroll.
+            equations, note = self._equations_beside(path)
+            self.call_from_thread(self._set_equations, equations, note)
             return
         self._log(f"[red]COMPILE  {path.name} FAILED:[/]  {escape(result.message)}")
         if result.line:
