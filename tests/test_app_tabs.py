@@ -328,9 +328,11 @@ async def test_source_pane_is_coloured_and_other_text_is_not(app, tmp_path):
         await pilot.pause(0.5)
         view = app.query_one("#jed-view", PldTextArea)
         assert view.pld and view._highlights[0]  # Textual still builds colours through our hook
+        assert not view.soft_wrap  # equations keep their line
         view.insert("; new\n", (0, 0))
         await pilot.pause(0.1)
         assert view._highlights[0]  # rebuilt after an edit
         _load(app, notes)
         await pilot.pause(0.5)
         assert not view.pld and not any(view._highlights.values())
+        assert view.soft_wrap  # prose still wraps

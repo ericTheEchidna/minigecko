@@ -422,6 +422,7 @@ class MinigeckoApp(App):
             view.show_line_numbers = editable  # compiler errors name a line
             # Colour a .pld source; must be set before load_text builds the colours.
             view.pld = editable and bool(self._data_path) and self._data_path.suffix.lower() == ".pld"
+            view.soft_wrap = not view.pld  # an equation stays on one line; scroll sideways
             view.load_text(text)
             self._update_text_title()
         if text is not None and not solo:
