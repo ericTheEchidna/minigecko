@@ -433,10 +433,10 @@ class MinigeckoApp(App):
 
     def _blank_check_and_log(self, ic_name: str) -> None:
         """Blank-check *ic_name* and log the verdict (call from a worker thread)."""
-        from minigecko.core import blank_check_device, blank_check_verdict
+        from minigecko.core import checked_blank_check
 
-        self._log(f"[cyan]BLANK CHECK[/]  {ic_name} …")
-        verdict, detail = blank_check_verdict(blank_check_device(ic_name))
+        self._log(f"[cyan]BLANK CHECK[/]  {ic_name} …  (contact check first)")
+        verdict, detail = checked_blank_check(ic_name)
         if verdict == "blank":
             self._log(f"[green]BLANK CHECK  {ic_name}: blank[/]  {detail}")
         elif verdict == "not blank":

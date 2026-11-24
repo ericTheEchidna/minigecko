@@ -52,13 +52,16 @@ the chip is in a fully erased state.
 Workflow:
 
 1. Open `IC Ops` and click `Blank Check`.
-2. `minipro` checks the device contents.
-3. The action log reports pass or fail.
+2. MiniGecko checks pin contact first. An empty or badly seated socket reads
+   as all `0xFF`, so without this step it would look blank.
+3. If every pin makes contact, `minipro` checks the device contents.
+4. The action log reports blank, not blank (with the first used byte), or
+   failed. A failed check says nothing about the chip's contents.
 
 Result interpretation:
 
-- Pass (`all 0xFF`): the device is blank and ready to program.
-- Fail (`not blank`): the device contains data and should be erased before
+- Blank (`every byte reads 0xFF`): the device is blank and ready to program.
+- Not blank: the device contains data and should be erased before
   writing unless you intend to overwrite it.
 
 ### 9.4 Erase

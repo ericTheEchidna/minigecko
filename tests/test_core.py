@@ -687,6 +687,45 @@ class TestBlankCheckVerdict:
         assert blank_check_verdict(MiniproResult(ok=False))[1] == (
             "minipro failed with no message")
 
+    # Recorded on the bench 2026-11-24: empty socket, AT28C64 profile.
+    _EMPTY_BLANK = MiniproResult(ok=True, returncode=0, stderr=(
+        "Found TL866II+ 04.2.132 (0x284)\nReading Code...  120 ms  OK\n"
+        "Code memory section is blank.\n"))
+    _EMPTY_CONTACT = MiniproResult(ok=False, returncode=1, stderr=(
+        "Found TL866II+ 04.2.132 (0x284)\n"
+        + "".join(f"Bad contact on pin:{p}\n" for p in (2, 3, 27, 28))))
+
+    def _fake_minipro(self, monkeypatch, contact, blank):
+        from minigecko.core import minipro as mp
+        calls = []
+
+        def run(args, **_k):
+            calls.append(args)
+            return contact if "-z" in args else blank
+        monkeypatch.setattr(mp, "_run", run)
+        return calls
+
+    def test_empty_socket_is_never_called_blank(self, monkeypatch):
+        from minigecko.core.minipro import checked_blank_check
+        calls = self._fake_minipro(monkeypatch, self._EMPTY_CONTACT, self._EMPTY_BLANK)
+        assert checked_blank_check("AT28C64") == (
+            "error", "no contact on pin 2, 3, 27, 28: seat the chip and try again")
+        assert not any("-b" in a for a in calls)  # blank check never ran
+
+    def test_good_contact_then_blank(self, monkeypatch):
+        from minigecko.core.minipro import checked_blank_check
+        good = MiniproResult(ok=True, stderr="Found TL866II+ 04.2.132 (0x284)\n")
+        calls = self._fake_minipro(monkeypatch, good, self._EMPTY_BLANK)
+        assert checked_blank_check("AT28C64")[0] == "blank"
+        assert ["-z" in a for a in calls] == [True, False]
+
+    def test_contact_check_failing_without_pins_is_an_error(self, monkeypatch):
+        from minigecko.core.minipro import checked_blank_check
+        broken = MiniproResult(ok=False, stderr="No programmer found.\n")
+        self._fake_minipro(monkeypatch, broken, self._EMPTY_BLANK)
+        assert checked_blank_check("AT28C64") == (
+            "error", "contact check failed: No programmer found.")
+
     def test_emulator_wording_matches(self, monkeypatch):
         from minigecko.core import emulator
         monkeypatch.setattr(emulator, "_fixture_for", lambda d: b"\x00")
@@ -1015,3 +1054,12 @@ class TestFeatureLines:
     def test_unknown_chip(self):
         from minigecko.ui.panels.ic_info_panel import feature_lines
         assert feature_lines({}) == []
+
+
+def test_empty_socket_many_pins_says_seat_a_chip(monkeypatch):
+    from minigecko.core import minipro as mp
+    many = MiniproResult(ok=False, returncode=1, stderr="".join(
+        f"Bad contact on pin:{p}\n" for p in range(2, 27)))
+    monkeypatch.setattr(mp, "_run", lambda args, **k: many)
+    assert mp.checked_blank_check("AT28C64") == (
+        "error", "no contact on 25 pins: is a chip seated?")

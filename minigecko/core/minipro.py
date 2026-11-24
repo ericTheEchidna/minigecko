@@ -399,6 +399,29 @@ def pin_check_device(device: str) -> MiniproResult:
     return result
 
 
+def checked_blank_check(device: str) -> tuple[str, str]:
+    """Blank-check *device* only after every pin makes contact.
+
+    minipro's blank check never tests contact, and an empty or badly seated
+    socket reads all 0xFF: "blank" (bench, 2026-11-24, empty socket, AT28C64
+    profile, exit 0). So a contact failure ends the check as an ``"error"``.
+    Returns the same verdicts as :func:`blank_check_verdict`.
+    """
+    contact = pin_check_device(device)
+    if not contact.ok:
+        bad = contact.data.get("bad_pins", []) if contact.data else []
+        if len(bad) > 8:
+            return "error", f"no contact on {len(bad)} pins: is a chip seated?"
+        if bad:
+            return "error", (
+                f"no contact on pin {', '.join(map(str, bad))}: "
+                "seat the chip and try again"
+            )
+        lines = [ln.strip() for ln in contact.output.splitlines() if ln.strip()]
+        return "error", "contact check failed: " + (lines[-1] if lines else "no message")
+    return blank_check_verdict(blank_check_device(device))
+
+
 def read_chip_id(device: str) -> MiniproResult:
     """
     Read the chip ID via ``minipro -p <device> -D`` and nothing else.
