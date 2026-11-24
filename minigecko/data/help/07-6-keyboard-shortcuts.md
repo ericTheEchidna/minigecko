@@ -10,7 +10,9 @@ Global shortcuts:
 | Key | Action |
 | --- | --- |
 | `f` | Open the file picker |
-| `Ctrl+S` | Save the loaded data to a file |
+| `Ctrl+S` | Save edits to the open file (after a chip read: Save as) |
+| `F12` | Save as: save the loaded data under a new name |
+| `Escape` | Leave the text you are editing, so letter keys work again |
 | `s` | Open chip selection |
 | `d` | Open IC operations for the selected chip |
 | `h` | Open this manual |

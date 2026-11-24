@@ -183,3 +183,84 @@ def test_text_detection():
     assert _as_text(b"AB\x00CD") is None  # zero byte
     assert _as_text(b"\xff\xff\xff\xff") is None  # erased EPROM: not UTF-8
     assert _as_text(b"\x1b[0mhello") is None  # other control bytes
+
+
+async def test_edit_a_pld_and_save_it_in_place(app, tmp_path):
+    pld = tmp_path / "gates.pld"
+    pld.write_text("GAL16V8\nGates\n")
+    async with app.run_test(size=(120, 36)) as pilot:
+        await pilot.pause(0.5)
+        _load(app, pld)
+        await pilot.pause(0.3)
+        view = app.query_one("#jed-view", TextArea)
+        assert not view.read_only and view.show_line_numbers
+
+        await pilot.press("ctrl+s")  # nothing changed yet: the file is untouched
+        assert pld.read_text() == "GAL16V8\nGates\n"
+
+        view.insert("; bench copy\n", (0, 0))
+        assert app._unsaved()
+        await pilot.press("ctrl+s")
+        await pilot.pause(0.1)
+        assert pld.read_text() == "; bench copy\nGAL16V8\nGates\n"
+        assert not app._unsaved()
+
+
+async def test_save_as_writes_the_edits_to_the_new_name(app, tmp_path, monkeypatch):
+    pld = tmp_path / "gates.pld"
+    pld.write_text("GAL16V8\nGates\n")
+    copy = tmp_path / "gates2.pld"
+    monkeypatch.setattr(app, "push_screen", lambda screen, callback: callback(copy))
+    async with app.run_test(size=(120, 36)) as pilot:
+        await pilot.pause(0.5)
+        _load(app, pld)
+        await pilot.pause(0.3)
+        app.query_one("#jed-view", TextArea).insert("; v2\n", (0, 0))
+        await pilot.press("f12")
+        await pilot.pause(0.5)
+        assert copy.read_text() == "; v2\nGAL16V8\nGates\n"
+        assert pld.read_text() == "GAL16V8\nGates\n"  # the original is untouched
+        assert app._data_path == copy and not app._unsaved()
+
+
+async def test_unsaved_edits_warn_once_before_they_are_lost(app, tmp_path):
+    pld = tmp_path / "gates.pld"
+    pld.write_text("GAL16V8\n")
+    async with app.run_test(size=(120, 36)) as pilot:
+        await pilot.pause(0.5)
+        _load(app, pld)
+        await pilot.pause(0.3)
+        app.query_one("#jed-view", TextArea).insert("x", (0, 0))
+        assert not app._may_discard("file", "f")  # first try only warns
+        assert app._may_discard("file", "f")  # the second discards
+        assert not app._may_discard("quit", "Ctrl+Q")  # another action warns afresh
+
+
+async def test_jed_and_chp_stay_read_only(app):
+    async with app.run_test(size=(120, 36)) as pilot:
+        await pilot.pause(0.5)
+        for path in (JED, JED.parent / "gates_16v8.chp"):
+            _load(app, path)
+            await pilot.pause(0.5)
+            assert app.query_one("#jed-view", TextArea).read_only
+            assert app._saved_text is None
+
+
+async def test_letters_type_in_the_editor_and_escape_leaves_it(app, tmp_path):
+    pld = tmp_path / "gates.pld"
+    pld.write_text("GAL16V8\n")
+    async with app.run_test(size=(120, 36)) as pilot:
+        await pilot.pause(0.5)
+        _load(app, pld)
+        await pilot.pause(0.3)
+        view = app.query_one("#jed-view", TextArea)
+        view.focus()
+        await pilot.press("f")  # typed, not the File key
+        assert view.text.startswith("f") and len(app.screen_stack) == 1
+        await pilot.press("escape")
+        assert app.focused is not view
+        await pilot.press("f")  # now the File key: unsaved edit, so it only warns
+        assert len(app.screen_stack) == 1 and app._discard_armed == "file"
+        await pilot.press("f")  # pressed again: discards and opens the picker
+        await pilot.pause(0.2)
+        assert len(app.screen_stack) == 2

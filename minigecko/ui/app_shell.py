@@ -65,6 +65,8 @@ class MinigeckoApp(App):
     BINDINGS: ClassVar[list[Binding]] = [
         Binding("f", "file", "File"),
         Binding("ctrl+s", "save", "Save"),
+        Binding("f12", "save_as", "Save as"),
+        Binding("escape", "leave_editor", "Leave editor", show=False),
         Binding("s", "select_ic", "Select IC"),
         Binding("d", "ic_ops", "IC Ops"),
         Binding("h", "help", "Help"),
@@ -84,6 +86,8 @@ class MinigeckoApp(App):
         self._read_from: str | None = None  # chip the loaded data was read from
         self._selected_ic: str | None = None
         self._last_command: str | None = None  # last external command line run
+        self._saved_text: str | None = None  # editable text as last saved; None = not editable
+        self._discard_armed: str | None = None  # action that may discard edits on its next press
 
     def _on_command(self, command: str, note: str = "") -> None:
         """Log an external command line; called from any thread before it runs."""
@@ -247,7 +251,42 @@ class MinigeckoApp(App):
     def _preload_help_manual(self) -> None:
         load_manual_text()
 
+    def _unsaved(self) -> bool:
+        """True when the open text has edits not yet saved."""
+        if self._saved_text is None:
+            return False
+        return self.query_one("#jed-view", TextArea).text != self._saved_text
+
+    def _may_discard(self, action: str, again: str) -> bool:
+        """True when *action* may replace the open text.
+
+        With unsaved edits the first try only warns; trying *action* again
+        discards them.
+        """
+        if not self._unsaved() or self._discard_armed == action:
+            self._discard_armed = None
+            return True
+        self._discard_armed = action
+        name = self._data_path.name if self._data_path else "the open file"
+        self.notify(
+            f"{name} has unsaved changes. Press Ctrl+S to save them, "
+            f"or {again} again to discard them.",
+            severity="warning",
+        )
+        return False
+
+    def action_leave_editor(self) -> None:
+        """Escape leaves a text pane, so letter keys reach the app again."""
+        if isinstance(self.focused, TextArea):
+            self.set_focus(None)
+
+    async def action_quit(self) -> None:
+        if self._may_discard("quit", "Ctrl+Q"):
+            self.exit()
+
     def action_file(self) -> None:
+        if not self._may_discard("file", "f"):
+            return
         start = self.get_last_directory()
 
         def _on_file(path: Path | None) -> None:
@@ -309,7 +348,10 @@ class MinigeckoApp(App):
                 equations, note = decompile(jed, self._selected_ic or "")
                 note = f"From {jed.name}. {note}"
             self.call_from_thread(
-                self._show_data, None, text, equations, note, f"{kind} ({path.name})"
+                lambda: self._show_data(
+                    None, text, equations, note, f"{kind} ({path.name})",
+                    editable=kind == "Source",  # a .chp is Galette's output: read-only
+                )
             )
             return
 
@@ -320,7 +362,9 @@ class MinigeckoApp(App):
 
         text = _as_text(data)
         if text is not None:  # plain text reads as text, across the whole tab
-            self.call_from_thread(self._show_data, None, text, None, "", path.name, True)
+            self.call_from_thread(
+                lambda: self._show_data(None, text, None, "", path.name, solo=True, editable=True)
+            )
             return
 
         self.call_from_thread(self._show_data, data, None)
@@ -333,10 +377,14 @@ class MinigeckoApp(App):
         note: str = "",
         text_title: str = "Fuse map (.jed)",
         solo: bool = False,
+        editable: bool = False,
     ) -> None:
         """Fill the Data tab and switch to it: hex for *data*, or *text*
         (titled *text_title*) beside the decompiled *equations*, or *note*
-        saying why not. With *solo*, the text fills the tab on its own."""
+        saying why not. With *solo*, the text fills the tab on its own; with
+        *editable*, it can be changed and saved."""
+        self._saved_text = text if (text is not None and editable) else None
+        self._discard_armed = None
         self.query_one("#data-empty").display = False
         hex_panel = self.query_one(HexPanel)
         hex_panel.display = data is not None
@@ -349,8 +397,13 @@ class MinigeckoApp(App):
             self.query_one("#jed-left").styles.width = (
                 "1fr" if solo else f"{self._state['jed_split']}%"
             )
-            self.query_one("#jed-title", Static).update(text_title)
-            self.query_one("#jed-view", TextArea).load_text(text)
+            self.query_one("#jed-title", Static).update(
+                f"{text_title}: editable, Ctrl+S saves" if editable else text_title
+            )
+            view = self.query_one("#jed-view", TextArea)
+            view.read_only = not editable
+            view.show_line_numbers = editable  # compiler errors name a line
+            view.load_text(text)
         if text is not None and not solo:
             # The note goes in the title, so the pane holds only jedutil's output.
             title = self.query_one("#eqn-title", Static)
@@ -392,7 +445,7 @@ class MinigeckoApp(App):
     def check_action(self, action: str, parameters: tuple) -> bool | None:
         if action == "ic_ops":
             return bool(self._selected_ic)
-        if action == "save":
+        if action in ("save", "save_as"):
             return bool(self._data_path)
         return True
 
@@ -448,6 +501,8 @@ class MinigeckoApp(App):
             self._log(f"[red]PIN CHECK  {ic_name} FAIL:[/]  {result.output.strip()}")
 
     def run_read_op(self, ic_name: str) -> None:
+        if not self._may_discard("read", "Read"):  # the read replaces the Data tab
+            return
         self._do_read(ic_name)
 
     @work(thread=True)
@@ -473,7 +528,7 @@ class MinigeckoApp(App):
 
     def _on_read_done(self, ic_name: str, path: Path) -> None:
         size = path.stat().st_size
-        self.log_action(f"[green]READ  {ic_name} OK[/]  {size:,} B  (ctrl+s to save it)")
+        self.log_action(f"[green]READ  {ic_name} OK[/]  {size:,} B  (Ctrl+S to save it)")
         self._data_path = path
         self._read_from = ic_name
         self._file_label = None  # the loaded data is the chip read now, not the last file
@@ -482,12 +537,37 @@ class MinigeckoApp(App):
         self._load_hex(path)
 
     def action_save(self) -> None:
-        """Save the loaded data (a file or a chip read) under a name the user picks."""
+        """Save edits to the open file in place; a chip read has no file yet,
+        so it goes to Save as."""
+        if not self._data_path:
+            self.log_action("[yellow]SAVE  no data loaded[/]")
+            return
+        if self._read_from:
+            self.action_save_as()
+            return
+        if not self._unsaved():
+            self.notify("No changes to save.")
+            return
+        text = self.query_one("#jed-view", TextArea).text
+        try:
+            self._data_path.write_text(text)
+        except OSError as exc:
+            self.log_action(f"[red]SAVE  failed:[/]  {exc}")
+            return
+        self._saved_text = text
+        self._discard_armed = None
+        self.log_action(f"[green]SAVE  OK[/]  {self._data_path}")
+
+    def action_save_as(self) -> None:
+        """Save the loaded data (a file, edited text or a chip read) under a
+        name the user picks; the new file becomes the open one."""
         src = self._data_path
         if not src:
             self.log_action("[yellow]SAVE  no data loaded[/]")
             return
         default = f"{self._read_from}{src.suffix}" if self._read_from else src.name
+        # Editable text is saved as it stands on screen, edits included.
+        text = self.query_one("#jed-view", TextArea).text if self._saved_text is not None else None
 
         def _on_save(save_path: Path | None) -> None:
             if not save_path:
@@ -495,7 +575,10 @@ class MinigeckoApp(App):
             import shutil
 
             try:
-                shutil.copy2(src, save_path)
+                if text is not None:
+                    save_path.write_text(text)
+                else:
+                    shutil.copy2(src, save_path)
             except OSError as exc:
                 self.log_action(f"[red]SAVE  failed:[/]  {exc}")
                 return
@@ -506,6 +589,8 @@ class MinigeckoApp(App):
             self._read_from = None
             self._update_subtitle()
             self.log_action(f"[green]SAVE  OK[/]  → {save_path}")
+            if text is not None:
+                self._load_hex(save_path)  # retitle, and pick up a .jed beside the new name
 
         self.push_screen(FilePickerScreen(start_path=self.get_last_directory(), save_name=default), _on_save)
 
@@ -616,6 +701,8 @@ class MinigeckoApp(App):
             )
 
     def run_erase_op(self, ic_name: str, blank_check_after: bool = False, read_after: bool = False) -> None:
+        if read_after and not self._may_discard("erase_read", "Erase"):
+            return
         self._do_erase(ic_name, blank_check_after, read_after)
 
     @work(thread=True)

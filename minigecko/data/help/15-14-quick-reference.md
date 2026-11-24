@@ -17,7 +17,8 @@
 | Key | Action |
 | --- | --- |
 | `f` | Open file picker |
-| `Ctrl+S` | Save the loaded data to a file |
+| `Ctrl+S` | Save edits to the open file |
+| `F12` | Save as: save the loaded data under a new name |
 | `1` / `2` | Show the Chip / Data tab |
 | `s` | Open chip selector |
 | `d` | Open IC operations (requires chip selected) |

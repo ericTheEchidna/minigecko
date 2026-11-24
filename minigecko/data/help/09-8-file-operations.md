@@ -32,19 +32,27 @@ After a file is opened:
 - The action log records the opened filename and size.
 - The hex panel refreshes to show the file contents.
 
-### 8.2 Saving to a File
+### 8.2 Editing and Saving
 
-`Ctrl+S` saves the loaded data to a file you name. The key appears in the
-footer once data is loaded.
+A `.pld` source and any plain-text file open for editing, with line numbers.
+A `.jed`, a `.chp` and data read from a chip are read-only.
 
-Preconditions:
+While you type in the text, letter keys go into the text. Press `Escape` (or
+`Tab`) to leave it, so that `f`, `s`, `d` and the other keys work again.
 
-- Data must be loaded, either from a file you opened or from a previous device
-  read operation.
+- `Ctrl+S` (**Save**) writes your edits back to the open file. With nothing
+  changed it only says so. After a device read, which has no file yet, it
+  works like Save as.
+- `F12` (**Save as**) saves the loaded data, with any edits, under a name you
+  pick. The new file becomes the open one; the old file stays as it was.
 
-Workflow:
+Before an action would throw away unsaved edits (opening another file,
+reading a chip, quitting), MiniGecko warns you. Do the same thing again to
+discard the edits.
 
-1. Press `Ctrl+S`. The save dialog opens with a file name filled in: the
+Save as workflow:
+
+1. Press `F12`. The save dialog opens with a file name filled in: the
    chip's name after a device read (for example `AT28C64.bin`), otherwise the
    loaded file's name.
 2. Pick the folder in the tree (`Enter` on a folder chooses it), and edit the
