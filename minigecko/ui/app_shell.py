@@ -92,6 +92,7 @@ class MinigeckoApp(App):
         self._saved_text: str | None = None  # editable text as last saved; None = not editable
         self._discard_armed: str | None = None  # action that may discard edits on its next press
         self._compiling = False  # a compile is running; F9 waits for it
+        self._text_title = ""  # left pane's title, before any note
 
     def _on_command(self, command: str, note: str = "") -> None:
         """Log an external command line; called from any thread before it runs."""
@@ -414,16 +415,27 @@ class MinigeckoApp(App):
             self.query_one("#jed-left").styles.width = (
                 "1fr" if solo else f"{self._state['jed_split']}%"
             )
-            self.query_one("#jed-title", Static).update(
-                f"{text_title}: editable, Ctrl+S saves" if editable else text_title
-            )
+            self._text_title = text_title
             view = self.query_one("#jed-view", TextArea)
             view.read_only = not editable
             view.show_line_numbers = editable  # compiler errors name a line
             view.load_text(text)
+            self._update_text_title()
         if text is not None and not solo:
             self._set_equations(equations, note)
         self.action_show_tab("tab-data")
+
+    def _update_text_title(self) -> None:
+        """Title the left pane; for a .pld, name the compiler F9 will use."""
+        title = self._text_title
+        if self._saved_text is not None:  # editable
+            if self._data_path and self._data_path.suffix.lower() == ".pld":
+                from minigecko.core.pld import compiler_note
+
+                title += f": {compiler_note(self._saved_text)}. Ctrl+S saves"
+            else:
+                title += ": editable, Ctrl+S saves"
+        self.query_one("#jed-title", Static).update(title)
 
     def _set_equations(self, equations: str | None, note: str) -> None:
         """Fill the Equations pane; the note goes in its title, so the pane
@@ -602,6 +614,7 @@ class MinigeckoApp(App):
         self._saved_text = text
         self._discard_armed = None
         self.log_action(f"[green]SAVE  OK[/]  {self._data_path}")
+        self._update_text_title()  # the first lines may now pick another compiler
         return True
 
     def action_options(self) -> None:

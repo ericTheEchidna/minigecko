@@ -314,3 +314,38 @@ async def test_options_buttons_stay_on_a_short_terminal(app):
         assert save.region.bottom <= 30 and save.region.height == 3  # fully on screen
         scroll = app.screen.query_one("VerticalScroll")
         assert scroll.max_scroll_y > 0  # the options scroll instead of being cut off
+
+
+# --- Which compiler F9 uses (MINIGECKO-01D, piece 2) -------------------------
+
+def test_compiler_note_names_language_tool_and_a_missing_tool(monkeypatch, tmp_path):
+    from minigecko.core import pld
+    galasm = (JED_DIR / "gates_16v8.pld").read_text()
+    cupl = (JED_DIR / "forbin80_mem.pld").read_text()
+    monkeypatch.setattr(shutil, "which", lambda name: "/usr/bin/" + name)
+    assert pld.compiler_note(galasm) == "GALasm, F9 compiles with Galette"
+    pld.set_wine_prefix(str(tmp_path))  # no WinCUPL there
+    try:
+        assert pld.compiler_note(cupl) == "CUPL, F9 compiles with WinCUPL (WinCUPL not found)"
+    finally:
+        pld.set_wine_prefix("")
+    monkeypatch.setattr(shutil, "which", lambda name: None)
+    assert pld.compiler_note(galasm) == "GALasm, F9 compiles with Galette (Galette not found)"
+    assert pld.compiler_note("hello") == "not GALasm or CUPL, so F9 cannot compile it"
+
+
+async def test_source_title_names_the_compiler_and_follows_a_save(app, tmp_path, monkeypatch):
+    from textual.widgets import Static, TextArea
+    monkeypatch.setattr(shutil, "which", lambda name: "/usr/bin/" + name)
+    src = tmp_path / "x.pld"
+    src.write_text("hello\n")
+    async with app.run_test(size=(140, 36)) as pilot:
+        await pilot.pause(0.5)
+        _open(app, src)
+        await pilot.pause(0.3)
+        title = lambda: str(app.query_one("#jed-title", Static).render())
+        assert "F9 cannot compile it" in title()
+        app.query_one("#jed-view", TextArea).text = "GAL16V8\nSig\n"
+        await pilot.press("ctrl+s")
+        await pilot.pause(0.1)
+        assert "GALasm, F9 compiles with Galette" in title()

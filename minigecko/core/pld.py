@@ -254,3 +254,17 @@ def _wrote(path: Path, suffixes: list[str]) -> str:
     names = [path.stem + sfx for sfx in suffixes]
     listed = names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
     return f"wrote {listed}"
+
+
+def compiler_note(text: str) -> str:
+    """Plain words for the Source pane: the language and what F9 will run."""
+    language = pld_language(text)
+    if language == GALASM:
+        name, tool, ready = "GALasm", "Galette", shutil.which("galette") is not None
+    elif language == CUPL:
+        exe = wine_prefix() / "drive_c" / "Wincupl" / "Shared" / "cupl.exe"
+        name, tool = "CUPL", "WinCUPL"
+        ready = shutil.which("wine") is not None and exe.is_file()
+    else:
+        return "not GALasm or CUPL, so F9 cannot compile it"
+    return f"{name}, F9 compiles with {tool}" + ("" if ready else f" ({tool} not found)")
