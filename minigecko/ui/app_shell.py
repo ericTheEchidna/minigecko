@@ -23,7 +23,7 @@ from minigecko.ui.modals import ChipSelectScreen, FilePickerScreen, HelpScreen, 
 from minigecko.ui.modals.help_screen import is_manual_cached, load_manual_text
 from minigecko.ui.panels import ActionLogPanel, HexPanel, ICInfoPanel
 from minigecko.ui.state import _load_state, _save_state
-from minigecko.ui.widgets import VResizeHandle
+from minigecko.ui.widgets import HResizeHandle, VResizeHandle
 
 logger = logging.getLogger(__name__)
 
@@ -157,9 +157,10 @@ class MinigeckoApp(App):
                 # A .jed shows its raw fuse map beside the decompiled equations.
                 with Horizontal(id="jed-pair") as pair:
                     pair.display = False
-                    with Vertical():
+                    with Vertical(id="jed-left"):
                         yield Static("Fuse map (.jed)", classes="pane-title")
                         yield TextArea("", read_only=True, id="jed-view")
+                    yield HResizeHandle("jed-left", id="jed-split")
                     with Vertical():
                         yield Static("Equations", id="eqn-title", classes="pane-title")
                         yield TextArea("", read_only=True, id="jed-eqn")
@@ -169,6 +170,7 @@ class MinigeckoApp(App):
 
     def on_mount(self) -> None:
         self.query_one(ActionLogPanel).styles.height = self._state["log_height"]
+        self.query_one("#jed-left").styles.width = f"{self._state['jed_split']}%"
         from minigecko.core import set_binary_path, set_command_listener
 
         set_binary_path(self._state.get("minipro_path", ""))
@@ -296,6 +298,11 @@ class MinigeckoApp(App):
             body = f"{note}\n\n{equations}" if equations is not None else note
             self.query_one("#jed-eqn", TextArea).load_text(body)
         self.action_show_tab("tab-data")
+
+    def save_jed_split(self, percent: float) -> None:
+        """Remember the Data tab's fuse map share of the width, in percent."""
+        self._state["jed_split"] = percent
+        _save_state(self._state)
 
     def save_log_height(self) -> None:
         panel = self.query_one(ActionLogPanel)

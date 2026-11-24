@@ -12,6 +12,7 @@ from minigecko.core import minipro
 from minigecko.ui import app_shell
 from minigecko.ui.app_shell import MinigeckoApp
 from minigecko.ui.panels import ActionLogPanel, HexPanel
+from minigecko.ui.state import _DEFAULT_STATE
 
 JED = Path(__file__).parent / "data" / "jed" / "counter_16v8.jed"
 
@@ -20,6 +21,7 @@ JED = Path(__file__).parent / "data" / "jed" / "counter_16v8.jed"
 def app(monkeypatch):
     monkeypatch.setattr(minipro, "_transport", emulator.emulate)  # never the real programmer
     monkeypatch.setattr(app_shell, "_save_state", lambda state: None)  # never the real state file
+    monkeypatch.setattr(app_shell, "_load_state", lambda: dict(_DEFAULT_STATE))  # nor its values
     return MinigeckoApp()
 
 
@@ -77,3 +79,26 @@ async def test_jed_shows_equations_beside_the_fuse_map(app, monkeypatch):
         await pilot.pause(0.3)
         assert "X = A" in app.query_one("#jed-eqn", TextArea).text
         assert "*QF2194" in app.query_one("#jed-view", TextArea).text
+
+
+async def test_dragging_the_divider_resizes_the_jed_panes(app, monkeypatch):
+    saved: list[dict] = []
+    monkeypatch.setattr(app_shell, "_save_state", lambda state: saved.append(dict(state)))
+    async with app.run_test(size=(120, 36)) as pilot:
+        await pilot.pause(0.5)
+        _load(app, JED)
+        await pilot.pause(0.3)
+        left = app.query_one("#jed-left")
+        right = app.query_one("#jed-eqn").parent
+        before = left.size.width
+        assert abs(before - right.size.width) <= 2  # starts at half and half
+
+        await pilot.mouse_down("#jed-split")
+        await pilot.hover("#jed-split", offset=(-30, 0))
+        await pilot.mouse_up("#jed-split")  # the handle has moved with the drag
+        await pilot.pause(0.2)
+
+        assert left.size.width == before - 30
+        assert right.size.width > before + 25
+        assert saved and saved[-1]["jed_split"] < 30  # remembered as a share of the width
+        assert left.styles.width.value == saved[-1]["jed_split"]
