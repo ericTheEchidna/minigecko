@@ -22,6 +22,7 @@
 | `F9` | Compile the open `.pld` with Galette or WinCUPL, by its language (saves first) |
 | `o` | Options: which files Galette and WinCUPL write, minimisation, Wine prefix |
 | `1` / `2` | Show the Chip / Data tab |
+| `l` | Hide or show the action log (an error or a running chip operation shows it again) |
 | `s` | Open chip selector |
 | `d` | Open IC operations (requires chip selected) |
 | `Ctrl+D` | Toggle dark / light theme |

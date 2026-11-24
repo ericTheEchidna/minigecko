@@ -18,6 +18,7 @@ Global shortcuts:
 | `s` | Open chip selection |
 | `d` | Open IC operations for the selected chip |
 | `h` | Open this manual |
+| `l` | Hide or show the action log (an error or a running chip operation shows it again) |
 | `y` | Copy the last command run (minipro, jedutil, Galette or WinCUPL), to paste into a terminal (see Appendix B) |
 | `1` / `2` | Show the Chip / Data tab |
 | `Ctrl+D` | Toggle theme |

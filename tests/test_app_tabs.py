@@ -264,3 +264,26 @@ async def test_letters_type_in_the_editor_and_escape_leaves_it(app, tmp_path):
         await pilot.press("f")  # pressed again: discards and opens the picker
         await pilot.pause(0.2)
         assert len(app.screen_stack) == 2
+
+
+async def test_l_hides_and_shows_the_log_and_errors_bring_it_back(app, monkeypatch):
+    saved: list[dict] = []
+    monkeypatch.setattr(app_shell, "_save_state", lambda state: saved.append(dict(state)))
+    async with app.run_test(size=(120, 36)) as pilot:
+        await pilot.pause(0.5)
+        log = app.query_one(ActionLogPanel)
+        tabs = app.query_one("#main-tabs", TabbedContent)
+        tall = tabs.size.height
+        await pilot.press("l")
+        await pilot.pause(0.1)
+        assert not log.display and saved[-1]["log_visible"] is False
+        assert tabs.size.height > tall  # the tabs take the room
+        app.log_action("[dim]a quiet line[/]")
+        assert not log.display
+        app.log_action("[red]WRITE  AT28C64 FAILED:[/]  no chip")
+        await pilot.pause(0.1)
+        assert log.display  # a failure is never hidden
+        await pilot.press("l")
+        assert not log.display
+        await pilot.press("l")
+        assert log.display and saved[-1]["log_visible"] is True

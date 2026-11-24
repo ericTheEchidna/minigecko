@@ -73,6 +73,7 @@ class MinigeckoApp(App):
         Binding("h", "help", "Help"),
         Binding("o", "options", "Options"),
         Binding("y", "copy_command", "Copy command"),
+        Binding("l", "toggle_log", "Log"),
         Binding("1","show_tab('tab-chip')", "Chip", show=False),
         Binding("2", "show_tab('tab-data')", "Data", show=False),
         Binding("ctrl+d", "toggle_dark", "Theme", show=True),
@@ -125,11 +126,27 @@ class MinigeckoApp(App):
         self.notify(f"Copied: {self._last_command}", markup=False)
 
     def log_action(self, message: str) -> None:
-        """Write a timestamped entry to the action log from the main thread."""
+        """Write a timestamped entry to the action log from the main thread.
+
+        An error line shows a hidden log again, so a failure is never hidden.
+        """
         try:
             self.query_one(ActionLogPanel).log(message)
+            if message.startswith("[red]"):
+                self._show_log(True)
         except Exception as exc:
             logger.debug("Action log unavailable during write: %s", exc)
+
+    def _show_log(self, visible: bool) -> None:
+        self.query_one(ActionLogPanel).display = visible
+        self.query_one(VResizeHandle).display = visible
+
+    def action_toggle_log(self) -> None:
+        """Hide or show the action log; the choice survives a restart."""
+        visible = not self.query_one(ActionLogPanel).display
+        self._show_log(visible)
+        self._state["log_visible"] = visible
+        _save_state(self._state)
 
     def _log(self, message: str) -> None:
         """Thread-safe log wrapper for worker methods."""
@@ -139,8 +156,13 @@ class MinigeckoApp(App):
         """Return a progress callback that updates the action log progress bar."""
         panel = self.query_one(ActionLogPanel)
 
+        def _show(percent: int | None) -> None:
+            if not panel.display:  # a running chip operation shows its progress
+                self._show_log(True)
+            panel.show_progress(percent)
+
         def _cb(percent: int | None, label: str) -> None:
-            self.call_from_thread(panel.show_progress, percent)
+            self.call_from_thread(_show, percent)
 
         return _cb
 
@@ -196,6 +218,7 @@ class MinigeckoApp(App):
 
     def on_mount(self) -> None:
         self.query_one(ActionLogPanel).styles.height = self._state["log_height"]
+        self._show_log(self._state.get("log_visible", True))
         self.query_one("#jed-left").styles.width = f"{self._state['jed_split']}%"
         from minigecko.core import set_binary_path, set_command_listener
 

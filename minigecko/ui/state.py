@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 _CONFIG_PATH = Path.home() / ".config" / "minigecko" / "state.json"
 _DEFAULT_STATE: dict = {
     "log_height": 12,
+    "log_visible": True,  # l hides and shows the action log
     "jed_split": 50,  # Data tab: fuse map pane's share of the width, percent
     "last_directory": str(Path.home()),
     "minipro_path": "",  # empty = find on PATH; set to absolute path to override
