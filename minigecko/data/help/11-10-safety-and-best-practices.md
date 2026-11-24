@@ -36,7 +36,7 @@ undone from within MiniGecko.
 Before erasing:
 
 - If the device contains data you may need again, read it first and save the
-  result to a file using `Write to file`.
+  result to a file with `Ctrl+S`.
 - Keep at least one backup copy of original device contents before erasing
   or overwriting, especially for one-time-programmable or hard-to-source parts.
 

@@ -10,6 +10,7 @@ Global shortcuts:
 | Key | Action |
 | --- | --- |
 | `f` | Open the file picker |
+| `Ctrl+S` | Save the loaded data to a file |
 | `s` | Open chip selection |
 | `d` | Open IC operations for the selected chip |
 | `i` | Identify a chip whose markings are unreadable |

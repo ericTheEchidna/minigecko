@@ -17,6 +17,7 @@
 | Key | Action |
 | --- | --- |
 | `f` | Open file picker |
+| `Ctrl+S` | Save the loaded data to a file |
 | `s` | Open chip selector |
 | `d` | Open IC operations (requires chip selected) |
 | `i` | Identify a chip with unreadable markings |
@@ -79,7 +80,6 @@
 | Compare vs file | No | No | Opens file picker for reference binary |
 | RAM / Logic test | No | No | SRAM and logic ICs only |
 | Pin check | No | No | Confirms ZIF socket contact |
-| Write to file | No | Yes | Saves in-memory buffer to disk |
 
 ### Common File Paths
 

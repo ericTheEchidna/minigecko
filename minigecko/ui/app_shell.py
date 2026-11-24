@@ -36,6 +36,7 @@ class MinigeckoApp(App):
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding("f", "file", "File"),
+        Binding("ctrl+s", "save", "Save"),
         Binding("s", "select_ic", "Select IC"),
         Binding("i", "identify_ic", "Identify"),
         Binding("d", "ic_ops", "IC Ops"),
@@ -50,6 +51,7 @@ class MinigeckoApp(App):
         self._programmer_label = "detecting…"
         self._file_label: str | None = None
         self._data_path: Path | None = None
+        self._read_from: str | None = None  # chip the loaded data was read from
         self._selected_ic: str | None = None
 
     def log_action(self, message: str) -> None:
@@ -91,7 +93,7 @@ class MinigeckoApp(App):
         if self._file_label:
             return Path(self._file_label).name
         if self._data_path:
-            return "device read"
+            return f"read from {self._read_from}" if self._read_from else "device read"
         return "(no file loaded)"
 
     def compose(self) -> ComposeResult:
@@ -170,6 +172,8 @@ class MinigeckoApp(App):
                 _save_state(self._state)
                 self._file_label = str(path)
                 self._data_path = path
+                self._read_from = None
+                self.refresh_bindings()
                 self._update_subtitle()
                 self.log_action(f"[green]FILE  opened[/]  {path.name}  ({path.stat().st_size:,} B)")
                 self._load_hex(path)
@@ -232,6 +236,8 @@ class MinigeckoApp(App):
     def check_action(self, action: str, parameters: tuple) -> bool | None:
         if action == "ic_ops":
             return bool(self._selected_ic)
+        if action == "save":
+            return bool(self._data_path)
         return True
 
     def action_ic_ops(self) -> None:
@@ -309,27 +315,41 @@ class MinigeckoApp(App):
 
     def _on_read_done(self, ic_name: str, path: Path) -> None:
         size = path.stat().st_size
-        self.log_action(f"[green]READ  {ic_name} OK[/]  {size:,} B")
+        self.log_action(f"[green]READ  {ic_name} OK[/]  {size:,} B  (ctrl+s to save it)")
         self._data_path = path
+        self._read_from = ic_name
+        self._file_label = None  # the loaded data is the chip read now, not the last file
+        self._update_subtitle()
+        self.refresh_bindings()
         self._load_hex(path)
 
-    def run_write_to_file_op(self) -> None:
+    def action_save(self) -> None:
+        """Save the loaded data (a file or a chip read) under a name the user picks."""
         src = self._data_path
         if not src:
             self.log_action("[yellow]SAVE  no data loaded[/]")
             return
+        default = f"{self._read_from}.bin" if self._read_from else src.name
 
         def _on_save(save_path: Path | None) -> None:
-            if save_path:
-                import shutil
+            if not save_path:
+                return
+            import shutil
 
+            try:
                 shutil.copy2(src, save_path)
-                self._data_path = save_path
-                self._file_label = str(save_path)
-                self._update_subtitle()
-                self.log_action(f"[green]SAVE  OK[/]  → {save_path.name}")
+            except OSError as exc:
+                self.log_action(f"[red]SAVE  failed:[/]  {exc}")
+                return
+            self._state["last_directory"] = str(save_path.parent)
+            _save_state(self._state)
+            self._data_path = save_path
+            self._file_label = str(save_path)
+            self._read_from = None
+            self._update_subtitle()
+            self.log_action(f"[green]SAVE  OK[/]  → {save_path}")
 
-        self.push_screen(FilePickerScreen(start_path=Path(self._state.get("last_directory", str(Path.home())))), _on_save)
+        self.push_screen(FilePickerScreen(start_path=self.get_last_directory(), save_name=default), _on_save)
 
     def run_write_to_device_op(self, ic_name: str, verify: bool = True) -> None:
         src = self._data_path

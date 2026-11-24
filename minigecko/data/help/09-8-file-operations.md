@@ -33,22 +33,23 @@ After a file is opened:
 
 ### 8.2 Saving to a File
 
-The write-to-file operation saves the current in-memory data to a file you
-choose. It is available from the IC operations menu as `Write to file`.
+`Ctrl+S` saves the loaded data to a file you name. The key appears in the
+footer once data is loaded.
 
 Preconditions:
 
 - Data must be loaded, either from a file you opened or from a previous device
   read operation.
-- If no data is loaded, MiniGecko logs a warning and the operation does nothing.
 
 Workflow:
 
-1. Open the IC operations menu with `d` or by clicking `IC Ops`.
-2. Click `Write to file`.
-3. The file picker opens. Navigate to the target directory and select a
-   destination path.
-4. Confirm with `Enter`.
+1. Press `Ctrl+S`. The save dialog opens with a file name filled in: the
+   chip's name after a device read (for example `AT28C64.bin`), otherwise the
+   loaded file's name.
+2. Pick the folder in the tree (`Enter` on a folder chooses it), and edit the
+   name if you like.
+3. Press `Enter` in the name box to save. If the file already exists,
+   MiniGecko asks you to press `Enter` again to overwrite it.
 
 After saving:
 

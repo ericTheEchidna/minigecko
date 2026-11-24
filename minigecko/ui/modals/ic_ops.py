@@ -18,20 +18,19 @@ _TEST = ("logic_test", "Logic Test", False)
 _RAMTEST = ("logic_test", "RAM Test", False)
 _READ = ("read", "Read from device", False)
 _WDEV = ("write_device", "Write to device", False)
-_WFILE = ("write_file", "Write to file", False)
 _BLANK = ("blank_check", "Blank Check", False)
 _ERASE = ("erase", "Erase", False)
 _CMP = ("compare", "Compare vs file…", False)
 
 _OPS_BY_TYPE: dict[int, list] = {
-    1: [_PIN, _READ, _WDEV, _WFILE, _BLANK, _ERASE, _CMP],
-    2: [_PIN, _READ, _WDEV, _WFILE, _BLANK, _ERASE, _CMP],
+    1: [_PIN, _READ, _WDEV, _BLANK, _ERASE, _CMP],
+    2: [_PIN, _READ, _WDEV, _BLANK, _ERASE, _CMP],
     3: [_PIN, _READ, _WDEV, _BLANK, _ERASE],
     4: [ _RAMTEST],
     5: [_TEST],
-    6: [_PIN, _READ, _WDEV, _WFILE, _BLANK, _ERASE, _CMP],
-    7: [_PIN, _READ, _WDEV, _WFILE],
-    8: [_PIN, _READ, _WDEV, _WFILE],
+    6: [_PIN, _READ, _WDEV, _BLANK, _ERASE, _CMP],
+    7: [_PIN, _READ, _WDEV],
+    8: [_PIN, _READ, _WDEV],
 }
 _OPS_DEFAULT = _OPS_BY_TYPE[1]
 
@@ -166,9 +165,6 @@ class ICOpsScreen(ModalScreen[None]):
                 ),
                 _on_write_confirmed,
             )
-        elif widget_id == "op-write_file":
-            self.dismiss(None)
-            self.app.run_write_to_file_op()
         elif widget_id == "op-blank_check":
             self.dismiss(None)
             self.app.run_blank_check_op(self._ic_name)
