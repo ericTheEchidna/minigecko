@@ -6,6 +6,7 @@ import logging
 import os
 import shutil
 import subprocess
+import textwrap
 import threading
 from pathlib import Path
 from typing import ClassVar
@@ -293,6 +294,8 @@ class MinigeckoApp(App):
             from minigecko.core.jedec import decompile
 
             text = data.decode("utf-8", errors="replace")
+            if kind == "Pinout":  # Galette centres its drawing on a wide page
+                text = textwrap.indent(textwrap.dedent(text).strip("\n"), "  ") + "\n"
             jed = next(
                 (p for p in (path.with_suffix(".jed"), path.with_suffix(".JED")) if p.exists()),
                 None,

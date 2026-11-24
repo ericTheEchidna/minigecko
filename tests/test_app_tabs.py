@@ -141,7 +141,10 @@ async def test_chp_shows_pinout_beside_its_jeds_equations(app, monkeypatch):
         _load(app, chp)
         await pilot.pause(0.3)
         assert "Pinout (gates_16v8.chp)" in str(app.query_one("#jed-title", Static).render())
-        assert "-------\\___/-------" in app.query_one("#jed-view", TextArea).text
+        shown = app.query_one("#jed-view", TextArea).text
+        assert "-------\\___/-------" in shown
+        lines = [ln for ln in shown.splitlines() if ln.strip()]
+        assert min(len(ln) - len(ln.lstrip()) for ln in lines) == 2  # Galette's margin trimmed
         assert "o12 = i2" in app.query_one("#jed-eqn", TextArea).text
         assert app.query_one("#jed-right").display
 
